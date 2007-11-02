@@ -1,6 +1,7 @@
 (in-package :cl-user)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (require "comm")
   ;; Don't warn when I hacking COMM package
   (setf hcl:*packages-for-warn-on-redefinition*
         (remove "COMM" hcl:*packages-for-warn-on-redefinition* :test #'equal)))
@@ -8,6 +9,10 @@
 (in-package :comm)
 
 (export '(open-udp-stream connect-to-udp-server))
+
+#+win32
+(eval-when (:load-toplevel :execute)
+  (ensure-sockets))
 
 (defconstant *socket_sock_dgram* 2
   "Connectionless, unreliable datagrams of fixed maximum length.")
@@ -36,7 +41,7 @@
 
 (defun connect-to-udp-server (host service &key errorp local-address local-port)
   "see connect-to-tcp-server"
-  (let ((socket-fd (socket *socket_af_inet* *socket_sock_dgram* 0)))
+  (let ((socket-fd (socket *socket_af_inet* *socket_sock_dgram* *socket_pf_unspec*)))
     (fli:with-dynamic-foreign-objects ((server-addr sockaddr_in)
                                        (client-addr sockaddr_in))
       ;; bind to local address/port if specified.
