@@ -17,8 +17,11 @@
 (defconstant *socket_sock_dgram* 2
   "Connectionless, unreliable datagrams of fixed maximum length.")
 
-(defun open-udp-stream (hostname service &key  (direction :io) (element-type 'base-char)
-                        errorp read-timeout write-timeout local-address local-port)
+(defun open-udp-stream (hostname service &key
+			(direction :io)
+			(element-type 'base-char)
+                        errorp read-timeout write-timeout
+			local-address local-port)
   "learn from open-tcp-stream"
   (let ((socket (connect-to-udp-server hostname service
                                        :errorp errorp
@@ -30,15 +33,22 @@
                                   :read-timeout read-timeout
                                   :write-timeout write-timeout)))
 
-(defun connect-to-udp-server (host service &key errorp local-address local-port)
+(defun connect-to-udp-server (host service &key
+			      errorp local-address local-port)
   "see connect-to-tcp-server"
-  (let ((socket-fd (socket *socket_af_inet* *socket_sock_dgram* *socket_pf_unspec*)))
+  (let ((socket-fd (socket *socket_af_inet*
+			   *socket_sock_dgram*
+			   *socket_pf_unspec*)))
     (if socket-fd
       (fli:with-dynamic-foreign-objects ((server-addr sockaddr_in)
                                          (client-addr sockaddr_in))
         ;; bind to local address/port if specified.
         (when (and local-address local-port)
-          (initialize-sockaddr_in client-addr *socket_af_inet* local-address local-port "udp")
+          (initialize-sockaddr_in client-addr
+				  *socket_af_inet*
+				  local-address
+				  local-port
+				  "udp")
           (bind socket-fd
                 (fli:copy-pointer client-addr :type 'sockaddr)
                 (fli:pointer-element-size client-addr)))

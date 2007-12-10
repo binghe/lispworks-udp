@@ -1,11 +1,11 @@
 ;;;; -*- Mode: Lisp -*-
 
-(in-package :cl-user)
+(in-package :asdf)
 
 (require "comm")
 
-(asdf:defsystem lispworks-udp
+(defsystem lispworks-udp
   :description "UDP support for LispWorks"
   :version "1.0"
-  :author "Chun Tian (binghe) <binghe.lisp@gmail.com>"
+  :author "Chun TIAN (binghe) <binghe.lisp@gmail.com>"
   :components ((:file "lispworks-udp")))
