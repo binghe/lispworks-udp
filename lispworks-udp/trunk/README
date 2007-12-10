@@ -1,4 +1,5 @@
-A UDP client implementation for LispWorks
+A UDP stream implementation for LispWorks
 
-Chun Tian (binghe)
+Usage is the same of TCP stream.
 
+Chun TIAN (binghe)
