@@ -8,7 +8,8 @@
 
 (in-package :comm)
 
-(export '(open-udp-stream connect-to-udp-server))
+(eval-when (:load-toplevel :execute)
+  (export '(open-udp-stream connect-to-udp-server)))
 
 #+win32
 (eval-when (:load-toplevel :execute)
@@ -61,3 +62,4 @@
           socket-fd
           (if errorp (error "cannot connect") nil)))
       (if errorp (error "cannot create socket") nil))))
+
