@@ -1,10 +1,11 @@
 (in-package :cl-user)
 
-(defun udp-echo-test (port)
-  (let ((server (comm:start-udp-server :service port))
+(defun udp-echo-test (&optional (port 10000) (function #'identity))
+  (let ((server (comm:start-udp-server :function function
+                                       :service port))
         (stream (comm:open-udp-stream "localhost" port))
         (data "Hello, World!"))
-    (dotimes (i 10)
+    (dotimes (i 5)
       (format stream "~S~%" data)
       (force-output stream)
       (format t "~D: Send message: ~A~%" i data)
