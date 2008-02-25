@@ -18,7 +18,10 @@
                              :initial-element 0
                              :allocation :static)))
     (fli:with-dynamic-foreign-objects ((client-addr sockaddr_in)
-                                       (len :int :initial-element (fli:size-of 'sockaddr_in)))
+                                       (len :int
+                                            #+(and lispworks5 (not lispworks5.0))
+                                            :initial-element
+                                            (fli:size-of 'sockaddr_in)))
       (fli:with-dynamic-lisp-array-pointer (ptr message :type :unsigned-byte)
         (loop (let ((n (%recvfrom socket-fd ptr *max-udp-message-size* 0
                                   (fli:copy-pointer client-addr :type 'sockaddr) len)))
@@ -27,7 +30,6 @@
                          (message-out (funcall function message-in))
                          (length-out (length message-out)))
                     (replace message message-out)
-                    (format t "message: ~A~%" message-out)
                     (%sendto socket-fd ptr length-out 0
                              (fli:copy-pointer client-addr :type 'sockaddr)
                              (fli:dereference len))))))))))
@@ -66,5 +68,5 @@
 
 (defun stop-udp-server (server)
   (destructuring-bind (process socket-fd) server
-    (mp:process-kill process)
-    (close-socket socket-fd)))
+    (close-socket socket-fd)
+    (mp:process-kill process)))
