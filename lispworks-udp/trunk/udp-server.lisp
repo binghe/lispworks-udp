@@ -68,5 +68,5 @@
 
 (defun stop-udp-server (server)
   (destructuring-bind (process socket-fd) server
-    (close-socket socket-fd)
-    (mp:process-kill process)))
+    (mp:process-kill process)
+    (close-socket socket-fd)))
