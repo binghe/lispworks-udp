@@ -4,10 +4,6 @@
 
 (in-package :comm)
 
-;;; Exports into COMM Package
-(export '(open-udp-stream
-          connect-to-udp-server))
-
 (defun connect-to-udp-server (host service &key errorp local-address local-port)
   "Something like CONNECT-TO-TCP-SERVER"
   (let ((socket-fd (socket *socket_af_inet*

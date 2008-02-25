@@ -17,11 +17,7 @@
 
 (in-package :comm)
 
-;;; Exports into COMM Package
-(export '(connect-to-unix-domain-server
-          open-unix-domain-stream))
-
-(defun connect-to-unix-domain-server (source &key (errorp nil))
+(defun connect-to-unix-domain-socket (source &key (errorp nil))
   "Something like CONNECT-TO-TCP-SERVER"
   (let ((socket-fd (socket *socket_af_unix*
 			   *socket_sock_stream*
@@ -35,7 +31,7 @@
                                        (element-type 'base-char)
                                        (errorp nil)
                                        timeout)
-  (let ((socket (connect-to-unix-domain-server source :errorp errorp)))
+  (let ((socket (connect-to-unix-domain-socket source :errorp errorp)))
     (if (= socket -1)
       (if errorp
         (error "Failed to create unix domain socket ~S" source)

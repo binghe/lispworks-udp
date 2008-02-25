@@ -15,5 +15,6 @@
   :components ((:file "lispworks-udp")
                (:file "udp-client")
                (:file "udp-server")
-               (:file "rtt")
-               (:file "unix")))
+               ;; (:file "rtt")
+               ;; (:file "unix")
+               ))
