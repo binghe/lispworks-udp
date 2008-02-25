@@ -11,7 +11,8 @@
   :members (lispworks-udp
             udp-client
             udp-server
-            rtt
-            unix)
+            ; rtt
+            ; unix
+            )
   :rules ((:in-order-to :compile :all
            (:requires (:load :previous)))))
