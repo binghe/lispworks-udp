@@ -10,7 +10,7 @@
     (if socket-fd
       (progn
         (when read-timeout (set-socket-receive-timeout socket-fd read-timeout))
-        (if (and local-address local-port)
+        (if local-port
           (progn ;; bind to local address/port if specified.
             (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in)))
               (initialize-sockaddr_in client-addr *socket_af_inet* local-address local-port "udp")

@@ -29,32 +29,11 @@
                              (fli:copy-pointer client-addr :type '(:struct sockaddr))
                              (fli:dereference len))))))))))
 
-(defun create-udp-socket-for-service (service &key address)
-  "Something like CREATE-TCP-SOCKET-FOR-SERVICE"
-  (let ((socket-fd (socket *socket_af_inet*
-			   *socket_sock_dgram*
-			   *socket_pf_unspec*)))
-    (if socket-fd
-      (fli:with-dynamic-foreign-objects ((server-addr sockaddr_in))
-        (initialize-sockaddr_in server-addr *socket_af_inet* address service "udp")
-        (if (bind socket-fd
-                  (fli:copy-pointer server-addr :type 'sockaddr)
-                  (fli:pointer-element-size server-addr))
-          (progn ;; set 1 second receive timeout
-            (set-socket-receive-timeout socket-fd 1)
-            socket-fd)
-          (progn
-            (close-socket socket-fd)
-            (error "cannot bind"))))
-      (error "cannot create socket"))))
-
-(defun start-udp-server (&key (function #'identity)
-                              (announce t)
-                              (service "lispworks")
-                              address
+(defun start-udp-server (&key (function #'identity) (announce t)
+                              (service "lispworks") address
                               (process-name (format nil "~S UDP server" service)))
   "Something like START-UP-SERVER"
-  (let ((socket-fd (create-udp-socket-for-service service :address address)))
+  (let ((socket-fd (open-udp-socket :local-address address :local-port service :read-timeout 1)))
     (announce-server-started announce socket-fd nil)
     (mp:process-run-function process-name nil
                              #'udp-server-loop socket-fd function)))
