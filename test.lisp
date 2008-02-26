@@ -17,10 +17,10 @@
         (close client-stream)
         (mp:process-kill server-process)))))
 
-;;; UDP Echo Test: Client as a MESSAGE send/receive
-(defun udp-echo-test-2 (&optional (port 10000) (function #'identity))
+;;; UDP Reverse-Echo Test: Client as a MESSAGE send/receive
+(defun udp-echo-test-2 (&optional (port 10000) (function #'reverse))
   (let ((server-process (comm:start-udp-server :function function :service port))
-        (client-socket (comm:open-udp-socket :timeout 1))
+        (client-socket (comm:open-udp-socket :read-timeout 1))
         (data #(1 2 3 4 5 6 7 8 9 10)))
     (unwind-protect
         (dotimes (i 5)
