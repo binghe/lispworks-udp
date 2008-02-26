@@ -61,9 +61,9 @@
   (declare (type integer socket-fd sec usec))
   (fli:with-dynamic-foreign-objects ((timeout (:struct timeval)))
     (fli:with-foreign-slots (tv-sec tv-usec) timeout
-      (setf tv-sec sec tv-usec usec)
-      (setsockopt socket-fd
-                  *sockopt_sol_socket*
-                  *sockopt_so_rcvtimeo*
-                  timeout
-                  (fli:size-of '(:struct timeval))))))
+      (setf tv-sec sec tv-usec usec))
+    (setsockopt socket-fd
+                *sockopt_sol_socket*
+                *sockopt_so_rcvtimeo*
+                timeout
+                (fli:size-of '(:struct timeval)))))
