@@ -21,13 +21,13 @@
                                   (fli:copy-pointer client-addr :type '(:struct sockaddr))
                                   len)))
                 (if (plusp n)
-                  (let* ((message-in (subseq message 0 n))
-                         (message-out (funcall function message-in))
-                         (length-out (length message-out)))
-                    (replace message message-out)
-                    (%sendto socket-fd ptr length-out 0
-                             (fli:copy-pointer client-addr :type '(:struct sockaddr))
-                             (fli:dereference len))))))))))
+                  (let ((reply-message (funcall function (subseq message 0 n))))
+                    (when reply-message ;; or we don't make a reply message
+                      (let ((length-out (length reply-message)))
+                        (replace message reply-message)
+                        (%sendto socket-fd ptr length-out 0
+                                 (fli:copy-pointer client-addr :type '(:struct sockaddr))
+                                 (fli:dereference len))))))))))))
 
 (defun start-udp-server (&key (function #'identity) (announce t)
                               (service "lispworks") address
