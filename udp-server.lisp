@@ -2,11 +2,21 @@
 
 (in-package :comm)
 
-(defun udp-server-loop (socket-fd &optional (function #'identity))
-  (declare (type (function ((simple-array (unsigned-byte 8) (*)))
-                           (simple-array (unsigned-byte 8) (*))) function))
+(proclaim '(type (function ((simple-array (unsigned-byte 8) (*))
+                            simple-base-string)
+                           (simple-array (unsigned-byte 8) (*)))
+                 default-udp-server-function))
+
+(defun default-udp-server-function (data host)
+  (declare (ignore host)
+           (type (simple-array (unsigned-byte 8) (*)) data)
+           (type simple-base-string host))
+  (the (simple-array (unsigned-byte 8) (*)) data))
+
+(defun udp-server-loop (socket-fd fn)
   "Main loop for A iterate UDP Server, function type as we declared."
-  (mp:ensure-process-cleanup `(close-socket ,socket-fd))
+  (declare (type (function ((simple-array (unsigned-byte 8) (*)) simple-base-string)
+                           (simple-array (unsigned-byte 8) (*))) fn))
   (let ((message (make-array *max-udp-message-size*
                              :element-type '(unsigned-byte 8)
                              :initial-element 0
@@ -21,7 +31,16 @@
                                   (fli:copy-pointer client-addr :type '(:struct sockaddr))
                                   len)))
                 (if (plusp n)
-                  (let ((reply-message (funcall function (subseq message 0 n))))
+                  (let* ((client-address (ip-address-string ; translate to string
+                                          (ntohl (fli:foreign-slot-value
+                                                  (fli:foreign-slot-value client-addr
+                                                                          'sin_addr
+                                                                          :object-type '(:struct sockaddr_in)
+                                                                          :type '(:struct in_addr)
+                                                                          :copy-foreign-object nil)
+                                                  's_addr
+                                                  :object-type '(:struct in_addr)))))
+                         (reply-message (funcall fn (subseq message 0 n) client-address)))
                     (when reply-message ;; or we don't make a reply message
                       (let ((length-out (length reply-message)))
                         (replace message reply-message)
@@ -29,14 +48,16 @@
                                  (fli:copy-pointer client-addr :type '(:struct sockaddr))
                                  (fli:dereference len))))))))))))
 
-(defun start-udp-server (&key (function #'identity) (announce t)
+(defun start-udp-server (&key (function #'default-udp-server-function) (announce t)
                               (service "lispworks") address
                               (process-name (format nil "~S UDP server" service)))
   "Something like START-UP-SERVER"
-  (let ((socket-fd (open-udp-socket :local-address address :local-port service :read-timeout 1)))
+  (let ((socket-fd (open-udp-socket :local-address address :local-port service :read-timeout 1 :errorp t)))
     (announce-server-started announce socket-fd nil)
-    (mp:process-run-function process-name nil
-                             #'udp-server-loop socket-fd function)))
+    (let ((process (mp:process-run-function process-name nil
+                                            #'udp-server-loop socket-fd function)))
+      (mp:ensure-process-cleanup `(close-socket ,socket-fd) process)
+      process)))
 
 (defmacro with-udp-server ((server &rest args) &body body)
   `(let ((,server (start-udp-server ,@args)))
