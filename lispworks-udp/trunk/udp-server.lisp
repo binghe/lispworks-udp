@@ -2,10 +2,10 @@
 
 (in-package :comm)
 
-(proclaim '(type (function ((simple-array (unsigned-byte 8) (*))
-                            simple-base-string)
-                           (simple-array (unsigned-byte 8) (*)))
-                 default-udp-server-function))
+(declaim (ftype (function ((simple-array (unsigned-byte 8) (*))
+                           simple-base-string)
+                          (simple-array (unsigned-byte 8) (*)))
+                default-udp-server-function))
 
 (defun default-udp-server-function (data host)
   (declare (ignore host)
@@ -57,10 +57,13 @@
     (let ((process (mp:process-run-function process-name nil
                                             #'udp-server-loop socket-fd function)))
       (mp:ensure-process-cleanup `(close-socket ,socket-fd) process)
+      (setf (getf (mp:process-plist process) 'socket) socket-fd)
       process)))
 
-(defmacro with-udp-server ((server &rest args) &body body)
-  `(let ((,server (start-udp-server ,@args)))
-     (unwind-protect
-         (progn ,@body)
-       (mp:process-kill ,server))))
+(defun stop-udp-server (process &key wait)
+  (let ((socket (getf (mp:process-plist process) 'socket)))
+    (mp:process-kill process)
+    (prog1 (zerop (close-socket socket))
+      (when wait
+        (mp:process-wait "Wait until UDP server process be killed"
+                         #'(lambda () (not (mp:process-alive-p process))))))))
