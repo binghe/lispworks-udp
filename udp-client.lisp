@@ -33,7 +33,7 @@
 
 (defun send-message (socket host service data)
   "Send message to a socket, using sendto()"
-  (declare (type (simple-array (unsigned-byte 8) (8)) data))
+  (declare (type (simple-array (unsigned-byte 8) (*)) data))
   (let ((message (make-array *max-udp-message-size*
                              :element-type '(unsigned-byte 8)
                              :initial-element 0
