@@ -53,7 +53,7 @@
           do (let ((server (comm:start-udp-server :function #'echo-fn :service 3500)))
                (comm:with-udp-socket (socket :read-timeout 1)
                  (let ((data #(1 2 3 4 5 6 7 8 9 10)))
-                   (comm:send-message socket "localhost" 3500 data)
+                   (comm:send-message socket data "localhost" 3500)
                    (format t "SOCKET: Send message: ~A~%" data)
                    (let ((echo (comm:receive-message socket)))
                      (format t "SOCKET: Recv message: ~A~%" echo))))
