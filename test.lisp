@@ -25,7 +25,21 @@
     (unwind-protect
         (comm:with-udp-socket (socket :read-timeout 1)
           (let ((data #(1 2 3 4 5 6 7 8 9 10)))
-            (comm:send-message socket "localhost" port data)
+            (comm:send-message socket data "localhost" port)
+            (format t "SOCKET: Send message: ~A~%" data)
+            (let ((echo (comm:receive-message socket)))
+              (format t "SOCKET: Recv message: ~A~%" echo))))
+      (mp:process-kill server-process))))
+
+(defun udp-echo-test-5 (&optional (port 10000))
+  (let* ((echo-fn #'(lambda (data host)
+                      (declare (ignore host))
+                      data))
+         (server-process (comm:start-udp-server :function echo-fn :service port)))
+    (unwind-protect
+        (comm:with-connected-udp-socket (socket "localhost" port :read-timeout 1)
+          (let ((data #(1 2 3 4 5 6 7 8 9 10)))
+            (princ (comm:send-message socket data))
             (format t "SOCKET: Send message: ~A~%" data)
             (let ((echo (comm:receive-message socket)))
               (format t "SOCKET: Recv message: ~A~%" echo))))
