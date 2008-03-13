@@ -10,6 +10,7 @@
 (export '(;; UDP Client
           open-udp-stream with-udp-stream
           connect-to-udp-server
+          with-connected-udp-socket
           open-udp-socket with-udp-socket
           send-message
           receive-message

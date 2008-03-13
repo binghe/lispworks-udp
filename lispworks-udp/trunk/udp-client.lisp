@@ -31,8 +31,8 @@
          (progn ,@body)
        (close-socket ,socket))))
 
-(defun send-message (socket host service data)
-  "Send message to a socket, using sendto()"
+(defun send-message (socket data &optional host service)
+  "Send message to a socket, using sendto()/send()"
   (declare (type (simple-array (unsigned-byte 8) (*)) data))
   (let ((message (make-array *max-udp-message-size*
                              :element-type '(unsigned-byte 8)
@@ -43,14 +43,17 @@
                                             #+(and lispworks5 (not lispworks5.0))
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
-      (initialize-sockaddr_in client-addr *socket_af_inet* host service "udp")
       (fli:with-dynamic-lisp-array-pointer (ptr message :type :unsigned-byte)
         (replace message data)
-        (%sendto socket ptr (min (length data) *max-udp-message-size*) 0
-                 (fli:copy-pointer client-addr :type '(:struct sockaddr))
-                 (fli:dereference len))))))
+        (if (and host service)
+          (progn
+            (initialize-sockaddr_in client-addr *socket_af_inet* host service "udp")
+            (%sendto socket ptr (min (length data) *max-udp-message-size*) 0
+                     (fli:copy-pointer client-addr :type '(:struct sockaddr))
+                     (fli:dereference len)))
+          (%send socket ptr (min (length data) *max-udp-message-size*) 0))))))
 
-(defun receive-message (socket &key read-timeout)
+(defun receive-message (socket &key read-timeout return-address)
   "Receive message from socket"
   (let ((message (make-array *max-udp-message-size*
                              :element-type '(unsigned-byte 8)
@@ -67,13 +70,26 @@
                             (fli:copy-pointer client-addr :type '(:struct sockaddr))
                             len)))
           (if (plusp n)
-            (subseq message 0 n)))))))
+            (if return-address
+              (values (subseq message 0 n)
+                      (ip-address-string ; translate to string
+                       (ntohl (fli:foreign-slot-value
+                               (fli:foreign-slot-value client-addr
+                                                       'sin_addr
+                                                       :object-type '(:struct sockaddr_in)
+                                                       :type '(:struct in_addr)
+                                                       :copy-foreign-object nil)
+                               's_addr
+                               :object-type '(:struct in_addr)))))
+              (subseq message 0 n))
+            (if return-address (values nil nil) nil)))))))
 
-(defun connect-to-udp-server (hostname service &key errorp local-address local-port)
+(defun connect-to-udp-server (hostname service &key errorp local-address local-port read-timeout)
   "Something like CONNECT-TO-TCP-SERVER"
   (let ((socket (open-udp-socket :errorp errorp
                                     :local-address local-address
-                                    :local-port local-port)))
+                                    :local-port local-port
+                                    :read-timeout read-timeout)))
     (if socket
       (fli:with-dynamic-foreign-objects ((server-addr (:struct sockaddr_in)))
         ;; connect to remote address/port
@@ -88,6 +104,12 @@
             (close-socket socket)
             (if errorp (error "cannot connect") nil))))
       (if errorp (error "cannot create socket") nil))))
+
+(defmacro with-connected-udp-socket ((socket &rest args) &body body)
+  `(let ((,socket (connect-to-udp-server ,@args)))
+     (unwind-protect
+         (progn ,@body)
+       (close-socket ,socket))))
 
 (defun open-udp-stream (hostname service &key (direction :io) (element-type 'base-char)
                                  errorp  read-timeout local-address local-port)
