@@ -26,7 +26,7 @@
                                             #+(and lispworks5 (not lispworks5.0))
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
-      (fli:with-dynamic-lisp-array-pointer (ptr message :type :unsigned-byte)
+      (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
         (loop (let ((n (%recvfrom socket-fd ptr *max-udp-message-size* 0
                                   (fli:copy-pointer client-addr :type '(:struct sockaddr))
                                   len)))
@@ -56,14 +56,14 @@
     (announce-server-started announce socket-fd nil)
     (let ((process (mp:process-run-function process-name nil
                                             #'udp-server-loop socket-fd function)))
-      (mp:ensure-process-cleanup `(close-socket ,socket-fd) process)
+      ;; (mp:ensure-process-cleanup `(close-socket ,socket-fd) process)
       (setf (getf (mp:process-plist process) 'socket) socket-fd)
       process)))
 
-(defun stop-udp-server (process &key wait)
-  (let ((socket (getf (mp:process-plist process) 'socket)))
+(defun stop-udp-server (process &key (wait t))
+  (let ((socket-fd (getf (mp:process-plist process) 'socket)))
     (mp:process-kill process)
-    (prog1 (zerop (close-socket socket))
+    (prog1 (zerop (close-socket socket-fd))
       (when wait
         (mp:process-wait "Wait until UDP server process be killed"
                          #'(lambda () (not (mp:process-alive-p process))))))))

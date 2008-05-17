@@ -31,7 +31,7 @@
          (progn ,@body)
        (close-socket ,socket))))
 
-(defun send-message (socket buffer length &optional host service)
+(defun send-message (socket buffer &optional (length (length buffer)) host service)
   "Send message to a socket, using sendto()/send()"
   (declare (type (simple-array (unsigned-byte 8) (*)) buffer)
            (type fixnum length))
@@ -44,7 +44,7 @@
                                             #+(and lispworks5 (not lispworks5.0))
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
-      (fli:with-dynamic-lisp-array-pointer (ptr message :type :unsigned-byte)
+      (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
         (replace message buffer :end2 length)
         (if (and host service)
           (progn
@@ -54,8 +54,12 @@
                      (fli:dereference len)))
           (%send socket ptr (min length *max-udp-message-size*) 0))))))
 
-(defun receive-message (socket buffer length &key read-timeout)
-  "Receive message from socket"
+(defun receive-message (socket &optional buffer (length (length buffer)) &key read-timeout)
+  "Receive message from socket, this function will return 4 values:
+   1. receive buffer
+   2. number of receive bytes
+   3. remote address
+   4. remote port"
   (let ((message (make-array *max-udp-message-size*
                              :element-type '(unsigned-byte 8)
                              :initial-element 0
@@ -65,7 +69,7 @@
                                             #+(and lispworks5 (not lispworks5.0))
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
-      (fli:with-dynamic-lisp-array-pointer (ptr message :type :unsigned-byte)
+      (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
         (when read-timeout (set-socket-receive-timeout socket read-timeout))
         (let ((n (%recvfrom socket ptr *max-udp-message-size* 0
                             (fli:copy-pointer client-addr :type '(:struct sockaddr))
@@ -83,15 +87,20 @@
                                                      :type '(:struct in_addr)
                                                      :copy-foreign-object nil)
                              's_addr
-                             :object-type '(:struct in_addr)))))
-            (values nil 0 "")))))))
+                             :object-type '(:struct in_addr))))
+                    (ntohs (fli:foreign-slot-value client-addr
+                                                   'sin_port
+                                                   :object-type '(:struct sockaddr_in)
+                                                   :type '(:unsigned :short)
+                                                   :copy-foreign-object nil)))
+            (values nil 0 "" 0)))))))
 
 (defun connect-to-udp-server (hostname service &key errorp local-address local-port read-timeout)
   "Something like CONNECT-TO-TCP-SERVER"
   (let ((socket (open-udp-socket :errorp errorp
-                                    :local-address local-address
-                                    :local-port local-port
-                                    :read-timeout read-timeout)))
+                                 :local-address local-address
+                                 :local-port local-port
+                                 :read-timeout read-timeout)))
     (if socket
       (fli:with-dynamic-foreign-objects ((server-addr (:struct sockaddr_in)))
         ;; connect to remote address/port
@@ -114,7 +123,7 @@
        (close-socket ,socket))))
 
 (defun open-udp-stream (hostname service &key (direction :io) (element-type 'base-char)
-                                 errorp  read-timeout local-address local-port)
+                                 errorp read-timeout local-address local-port)
   "Something like OPEN-TCP-STREAM"
   (let ((socket (connect-to-udp-server hostname service
                                        :errorp errorp
