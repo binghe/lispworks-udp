@@ -38,7 +38,7 @@
 ;;;          struct sockaddr *restrict address, socklen_t *restrict address_len);
 (fli:define-foreign-function (%recvfrom "recvfrom" :source)
     ((socket :int)
-     (buffer (:pointer :unsigned-byte))
+     (buffer (:pointer (:unsigned :byte)))
      (length :int)
      (flags :int)
      (address (:pointer (:struct sockaddr)))
@@ -50,7 +50,7 @@
 ;;;        const struct sockaddr *dest_addr, socklen_t dest_len);
 (fli:define-foreign-function (%sendto "sendto" :source)
     ((socket :int)
-     (buffer (:pointer :unsigned-byte))
+     (buffer (:pointer (:unsigned :byte)))
      (length :int)
      (flags :int)
      (address (:pointer (:struct sockaddr)))

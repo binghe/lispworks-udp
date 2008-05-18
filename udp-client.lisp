@@ -5,7 +5,7 @@
 (in-package :comm)
 
 (defun open-udp-socket (&key errorp local-address local-port read-timeout)
-  "Open a unconnected UDP socket"
+  "Open a unconnected UDP socket. For address ANY(*), just not set LOCAL-ADDRESS"
   (let ((socket-fd (socket *socket_af_inet* *socket_sock_dgram* *socket_pf_unspec*)))
     (if socket-fd
       (progn
