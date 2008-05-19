@@ -27,7 +27,11 @@
 
 (defconstant *socket_sock_dgram* 2
   "Connectionless, unreliable datagrams of fixed maximum length.")
-(defconstant *sockopt_so_rcvtimeo* #x1006 "receive timeout")
+
+(defconstant *sockopt_so_rcvtimeo*
+  #+(not linux) #x1006
+  #+linux 20
+  "receive timeout")
 
 (fli:define-c-struct timeval
   (tv-sec :long)
@@ -57,14 +61,30 @@
      (address-len :int))
   :result-type :int)
 
-(defun set-socket-receive-timeout (socket-fd sec &optional (usec 0))
-  "Set socket option: RCVTIMEO"
-  (declare (type integer socket-fd sec usec))
-  (fli:with-dynamic-foreign-objects ((timeout (:struct timeval)))
-    (fli:with-foreign-slots (tv-sec tv-usec) timeout
-      (setf tv-sec sec tv-usec usec))
-    (setsockopt socket-fd
+(defun set-socket-receive-timeout (socket-fd seconds)
+  "Set socket option: RCVTIMEO, argument seconds can be a float number"
+  (declare (type integer socket-fd)
+           (type float seconds))
+  (multiple-value-bind (sec usec) (truncate seconds)
+    (fli:with-dynamic-foreign-objects ((timeout (:struct timeval)))
+      (fli:with-foreign-slots (tv-sec tv-usec) timeout
+        (setf tv-sec sec
+              tv-usec (truncate (* 1000000 usec)))
+        (setsockopt socket-fd
+                    *sockopt_sol_socket*
+                    *sockopt_so_rcvtimeo*
+                    (fli:copy-pointer timeout :type '(:pointer :void))
+                    (fli:size-of '(:struct timeval)))))))
+
+(defun get-socket-receive-timeout (socket-fd)
+  "Get socket option: RCVTIMEO, return value is a float"
+  (declare (type integer socket-fd))
+  (fli:with-dynamic-foreign-objects ((timeout (:struct timeval))
+                                     (len :int))
+    (getsockopt socket-fd
                 *sockopt_sol_socket*
                 *sockopt_so_rcvtimeo*
-                timeout
-                (fli:size-of '(:struct timeval)))))
+                (fli:copy-pointer timeout :type '(:pointer :void))
+                len)
+    (fli:with-foreign-slots (tv-sec tv-usec) timeout
+      (float (+ tv-sec (/ tv-usec 1000000))))))

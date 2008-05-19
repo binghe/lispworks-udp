@@ -13,7 +13,8 @@
         (if local-port
           (progn ;; bind to local address/port if specified.
             (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in)))
-              (initialize-sockaddr_in client-addr *socket_af_inet* local-address local-port "udp")
+              (initialize-sockaddr_in client-addr *socket_af_inet*
+                                      local-address local-port "udp")
               (if (bind socket-fd
                         (fli:copy-pointer client-addr :type '(:struct sockaddr))
                         (fli:pointer-element-size client-addr))
@@ -33,7 +34,7 @@
 
 (defun send-message (socket buffer &optional (length (length buffer)) host service)
   "Send message to a socket, using sendto()/send()"
-  (declare (type (simple-array (unsigned-byte 8) (*)) buffer)
+  (declare (type sequence buffer)
            (type fixnum length))
   (let ((message (make-array *max-udp-message-size*
                              :element-type '(unsigned-byte 8)
@@ -45,7 +46,8 @@
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
-        (replace message buffer :end2 length)
+        (replace message (coerce buffer '(simple-array (unsigned-byte 8) (*)))
+                 :end2 length)
         (if (and host service)
           (progn
             (initialize-sockaddr_in client-addr *socket_af_inet* host service "udp")
@@ -54,26 +56,38 @@
                      (fli:dereference len)))
           (%send socket ptr (min length *max-udp-message-size*) 0))))))
 
-(defun receive-message (socket &optional buffer (length (length buffer)) &key read-timeout)
-  "Receive message from socket, this function will return 4 values:
+(defun receive-message (socket &optional buffer (length (length buffer))
+                               &key read-timeout)
+  "Receive message from socket, read-timeout is a float number in seconds.
+
+   This function will return 4 values:
    1. receive buffer
    2. number of receive bytes
    3. remote address
    4. remote port"
+  (declare (type integer socket)
+           (type sequence buffer))
   (let ((message (make-array *max-udp-message-size*
                              :element-type '(unsigned-byte 8)
                              :initial-element 0
-                             :allocation :static)))
+                             :allocation :static))
+        old-timeout)
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
                                        (len :int
                                             #+(and lispworks5 (not lispworks5.0))
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
-        (when read-timeout (set-socket-receive-timeout socket read-timeout))
+        ;; setup new read timeout
+        (when read-timeout
+          (setf old-timeout (get-socket-receive-timeout socket))
+          (set-socket-receive-timeout socket read-timeout))
         (let ((n (%recvfrom socket ptr *max-udp-message-size* 0
                             (fli:copy-pointer client-addr :type '(:struct sockaddr))
                             len)))
+          ;; restore old read timeout
+          (when (and read-timeout (/= old-timeout read-timeout))
+            (set-socket-receive-timeout socket old-timeout))
           (if (plusp n)
             (values (if buffer
                       (replace buffer message :end1 length :end2 n)
@@ -95,7 +109,8 @@
                                                    :copy-foreign-object nil)))
             (values nil 0 "" 0)))))))
 
-(defun connect-to-udp-server (hostname service &key errorp local-address local-port read-timeout)
+(defun connect-to-udp-server (hostname service &key errorp
+                                       local-address local-port read-timeout)
   "Something like CONNECT-TO-TCP-SERVER"
   (let ((socket (open-udp-socket :errorp errorp
                                  :local-address local-address
@@ -122,8 +137,10 @@
          (progn ,@body)
        (close-socket ,socket))))
 
-(defun open-udp-stream (hostname service &key (direction :io) (element-type 'base-char)
-                                 errorp read-timeout local-address local-port)
+(defun open-udp-stream (hostname service &key (direction :io)
+                                 (element-type 'base-char)
+                                 errorp read-timeout
+                                 local-address local-port)
   "Something like OPEN-TCP-STREAM"
   (let ((socket (connect-to-udp-server hostname service
                                        :errorp errorp
