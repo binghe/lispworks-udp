@@ -15,7 +15,7 @@
             (format t "STREAM: Send message: ~A~%" data)
             (let ((echo (read-line stream nil nil)))
               (format t "STREAM: Recv message: ~A~%" echo))))
-      (mp:process-kill server-process))))
+      (comm:stop-udp-server server-process))))
 
 (defun udp-echo-test-4 (&optional (port 10000))
   (let* ((echo-fn #'(lambda (data host)
@@ -29,7 +29,7 @@
             (format t "SOCKET: Send message: ~A~%" data)
             (let ((echo (multiple-value-list (comm:receive-message socket))))
               (format t "SOCKET: Recv message: ~A~%" echo))))
-      (mp:process-kill server-process))))
+      (comm:stop-udp-server server-process))))
 
 (defun udp-echo-test-5 (&optional (port 10000))
   (let* ((echo-fn #'(lambda (data host)
@@ -43,7 +43,7 @@
             (format t "SOCKET: Send message: ~A~%" data)
             (let ((echo (multiple-value-list (comm:receive-message socket))))
               (format t "SOCKET: Recv message: ~A~%" echo))))
-      (mp:process-kill server-process))))
+      (comm:stop-udp-server server-process))))
 
 (defun loop-test ()
   (labels ((echo-fn (data host)
