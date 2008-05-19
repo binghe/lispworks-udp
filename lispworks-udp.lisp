@@ -14,13 +14,16 @@
           open-udp-socket with-udp-socket
           send-message
           receive-message
+          ;; socket option
+          get-socket-receive-timeout
+          set-socket-receive-timeout
           ;; UDP Server
           start-udp-server stop-udp-server
           ;; UNIX Domain Socket
           open-unix-domain-stream
           connect-to-unix-domain-socket))
 
-(defparameter *max-udp-message-size* 65536)
+(defconstant +max-udp-message-size+ 65536)
 
 ;;;; Below is something we have to define (others already in COMM package)
 ;;;; binghe: my design goal is to use what COMM already have, and no C code.
@@ -64,7 +67,7 @@
 (defun set-socket-receive-timeout (socket-fd seconds)
   "Set socket option: RCVTIMEO, argument seconds can be a float number"
   (declare (type integer socket-fd)
-           (type float seconds))
+           (type number seconds))
   (multiple-value-bind (sec usec) (truncate seconds)
     (fli:with-dynamic-foreign-objects ((timeout (:struct timeval)))
       (fli:with-foreign-slots (tv-sec tv-usec) timeout
@@ -77,7 +80,7 @@
                     (fli:size-of '(:struct timeval)))))))
 
 (defun get-socket-receive-timeout (socket-fd)
-  "Get socket option: RCVTIMEO, return value is a float"
+  "Get socket option: RCVTIMEO, return value is a float number"
   (declare (type integer socket-fd))
   (fli:with-dynamic-foreign-objects ((timeout (:struct timeval))
                                      (len :int))

@@ -32,11 +32,12 @@
          (progn ,@body)
        (close-socket ,socket))))
 
-(defun send-message (socket buffer &optional (length (length buffer)) host service)
+(defun send-message (socket buffer &optional (length (length buffer)) host service
+                            &key (max-buffer-size +max-udp-message-size+))
   "Send message to a socket, using sendto()/send()"
   (declare (type sequence buffer)
            (type fixnum length))
-  (let ((message (make-array *max-udp-message-size*
+  (let ((message (make-array max-buffer-size
                              :element-type '(unsigned-byte 8)
                              :initial-element 0
                              :allocation :static)))
@@ -46,18 +47,17 @@
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
-        (replace message (coerce buffer '(simple-array (unsigned-byte 8) (*)))
-                 :end2 length)
+        (replace message buffer :end2 length)
         (if (and host service)
           (progn
             (initialize-sockaddr_in client-addr *socket_af_inet* host service "udp")
-            (%sendto socket ptr (min length *max-udp-message-size*) 0
+            (%sendto socket ptr (min length max-buffer-size) 0
                      (fli:copy-pointer client-addr :type '(:struct sockaddr))
                      (fli:dereference len)))
-          (%send socket ptr (min length *max-udp-message-size*) 0))))))
+          (%send socket ptr (min length max-buffer-size) 0))))))
 
 (defun receive-message (socket &optional buffer (length (length buffer))
-                               &key read-timeout)
+                               &key read-timeout (max-buffer-size +max-udp-message-size+))
   "Receive message from socket, read-timeout is a float number in seconds.
 
    This function will return 4 values:
@@ -67,7 +67,7 @@
    4. remote port"
   (declare (type integer socket)
            (type sequence buffer))
-  (let ((message (make-array *max-udp-message-size*
+  (let ((message (make-array max-buffer-size
                              :element-type '(unsigned-byte 8)
                              :initial-element 0
                              :allocation :static))
@@ -82,7 +82,7 @@
         (when read-timeout
           (setf old-timeout (get-socket-receive-timeout socket))
           (set-socket-receive-timeout socket read-timeout))
-        (let ((n (%recvfrom socket ptr *max-udp-message-size* 0
+        (let ((n (%recvfrom socket ptr max-buffer-size 0
                             (fli:copy-pointer client-addr :type '(:struct sockaddr))
                             len)))
           ;; restore old read timeout
@@ -90,9 +90,11 @@
             (set-socket-receive-timeout socket old-timeout))
           (if (plusp n)
             (values (if buffer
-                      (replace buffer message :end1 length :end2 n)
-                      (subseq message 0 n))
-                    n
+                      (replace buffer message
+			       :end1 (min length max-buffer-size)
+			       :end2 (min n max-buffer-size))
+                      (subseq message 0 (min n max-buffer-size)))
+                    (min n max-buffer-size)
                     (ip-address-string ; translate to string
                      (ntohl (fli:foreign-slot-value
                              (fli:foreign-slot-value client-addr

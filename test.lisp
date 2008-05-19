@@ -25,13 +25,14 @@
     (unwind-protect
         (comm:with-udp-socket (socket :read-timeout 1)
           (let ((data #(1 2 3 4 5 6 7 8 9 10)))
-            (comm:send-message socket data (length data) "localhost" port)
+            (comm:send-message socket data (length data) "localhost" port :max-buffer-size 8)
             (format t "SOCKET: Send message: ~A~%" data)
-            (let ((echo (multiple-value-list (comm:receive-message socket))))
+            (let ((echo (multiple-value-list (comm:receive-message socket nil nil :max-buffer-size 8))))
               (format t "SOCKET: Recv message: ~A~%" echo))))
       (comm:stop-udp-server server-process))))
 
 (defun udp-echo-test-5 (&optional (port 10000))
+  "Limit MAX-BUFFER-SIZE, less than send bytes."
   (let* ((echo-fn #'(lambda (data host)
                       (declare (ignore host))
                       data))
@@ -39,9 +40,9 @@
     (unwind-protect
         (comm:with-connected-udp-socket (socket "localhost" port :read-timeout 1)
           (let ((data #(1 2 3 4 5 6 7 8 9 10)))
-            (princ (comm:send-message socket data))
+            (princ (comm:send-message socket data (length data) nil nil :max-buffer-size 8))
             (format t "SOCKET: Send message: ~A~%" data)
-            (let ((echo (multiple-value-list (comm:receive-message socket))))
+            (let ((echo (multiple-value-list (comm:receive-message socket nil nil :max-buffer-size 8))))
               (format t "SOCKET: Recv message: ~A~%" echo))))
       (comm:stop-udp-server server-process))))
 
