@@ -387,6 +387,8 @@ Arguments and Values
 		A string.
   max-buffer-size
 		A fixnum.
+  loop-time
+		A float number.
   process
 		A process object of LispWorks MP.
 
@@ -403,6 +405,11 @@ Description
 
  START-UDP-SERVER start up one seprate thread (process) to serve, every time
  just only one client can be handled.
+
+ LOOP-TIME is used for optimize. At present, UDP server loop works by calling
+ recvfrom() with a read timeout (= LOOP-TIME, in seconds, default to 1
+ second), set this argument to smaller can cause the server thread be killed
+ faster.
 
 See also
   COMM:STOP-UDP-SERVER

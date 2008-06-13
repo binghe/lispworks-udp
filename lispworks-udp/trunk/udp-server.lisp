@@ -49,11 +49,12 @@
 (defun start-udp-server (&key (function #'default-udp-server-function) (announce nil)
 			 address (service "lispworks")
 			 (process-name (format nil "~S UDP server" service))
+                         (loop-time 1)
 			 (max-buffer-size +max-udp-message-size+))
   "Something like START-UP-SERVER"
   (let ((socket-fd (open-udp-socket :local-address address
                                     :local-port service
-                                    :read-timeout 1
+                                    :read-timeout loop-time
                                     :errorp t)))
     (announce-server-started announce socket-fd nil)
     (let ((process (mp:process-run-function process-name nil

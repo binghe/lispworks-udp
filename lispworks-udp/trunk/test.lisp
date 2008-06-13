@@ -51,7 +51,7 @@
              (declare (ignore host))
              data))
     (loop for i from 1 to 10
-          do (let ((server (comm:start-udp-server :function #'echo-fn :service 3500)))
+          do (let ((server (comm:start-udp-server :function #'echo-fn :service 3500 :loop-time 0.3)))
                (comm:with-udp-socket (socket :read-timeout 1)
                  (let ((data #(1 2 3 4 5 6 7 8 9 10)))
                    (comm:send-message socket data (length data) "localhost" 3500)
