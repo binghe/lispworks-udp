@@ -16,7 +16,7 @@
                              :allocation :static)))
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
                                        (len :int
-                                            #+(and lispworks5 (not lispworks5.0))
+                                            #-(or lispworks3 lispworks4 lispworks5.0)
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
