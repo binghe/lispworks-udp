@@ -1,0 +1,444 @@
+API Reference of LispWorks-UDP
+
+______________________
+| COMM:OPEN-UDP-STREAM						[Function]
+
+Summary
+
+  Attempts to connect to a remote UDP server and returns a stream object for
+  the connection.
+
+Signature
+
+  open-udp-stream hostname service
+                  &key direction element-type errorp read-timeout
+                       local-address local-port
+  => stream-object
+
+Arguments
+
+  hostname
+		An integer or string
+  service
+		A string or a fixnum
+  direction
+		One of :input, :output or :io
+  element-type
+		base-char or a subtype of integer.
+  errorp
+		A boolean.
+  read-timeout
+		A positive number, or nil.
+  local-address
+		nil, an integer or a string.
+  local-port
+		nil, a string or a fixnum.
+
+Values
+
+  stream-object
+		A socket stream.
+
+Description
+
+  This function is the UDP version of LispWorks' COMM:OPEN-TCP-STREAM. This
+  function can do following things: open a new UDP socket, bind it to local
+  address and port if needed, connect to this socket, and create a stream
+  object for it.
+
+See also
+
+  COMM:OPEN-TCP-STREAM
+
+______________________
+| COMM:WITH-UDP-STREAM						[Macro]
+
+Signature
+
+  with-udp-stream (stream &rest options) &body body => result
+
+Arguments
+
+  stream
+		A symbol.
+  options
+		A list of arguments to be passed to open-udp-stream
+
+Description
+
+  WITH-UDP-STREAM use OPEN-UDP-STREAM to open a "connected" UDP socket stream.
+
+  WITH-UDP-STREAM evaluates the BODY as an implicit PROGN with STREAM bound
+  to the value returned by OPEN-UDP-STREAM.
+
+  When control leaves the BODY, either normally or abnormally (such as by use
+  of THROW), the STREAM and the socket are automatically closed.
+
+See also
+  COMM:OPEN-UDP-STREAM
+
+____________________________
+| COMM:CONNECT-TO-UDP-SERVER					[Function]
+
+Summary
+
+  Attempts to connect to remote UDP server and return the UDP socket.
+
+Signature
+
+  connect-to-udp-server (hostname service &key errorp read-timeout
+                                               local-address local-port)
+  => socket
+
+Arguments and Values
+
+  hostname
+		An integer or string
+  service
+		A string or a fixnum
+  errorp
+		A boolean.
+  read-timeout
+		A positive number, or nil.
+  local-address
+		nil, an integer or a string.
+  local-port
+		nil, a string or a fixnum.
+  socket
+		A fixnum.
+
+Description
+
+  CONNECT-TO-UDP-SERVER is the lite-version of OPEN-UDP-STREAM, it just create
+  socket, connect to remote server, and return the socket fd as a integer.
+
+  Clients can use this socket to send/receive messages to/from only one
+  destination.
+
+See also
+
+  COMM:OPEN-UDP-STREAM, COMM:SEND-MESSAGE, COMM:RECEIVE-MESSAGE
+
+________________________________
+| COMM:WITH-CONNECTED-UDP-SOCKET				[Macro]
+
+Signature
+
+  with-connected-udp-socket (socket &rest options) &body body
+
+Arguments
+
+  socket
+		A symbol.
+  options
+		A list of arguments to be passed to connect-to-udp-socket
+
+Description
+
+  WITH-CONNECTED-UDP-SOCKET use CONNECT-TO-UDP-SOCKET to open a "connected"
+  UDP socket.
+
+  WITH-CONNECTED-UDP-SOCKET evaluates the BODY as an implicit PROGN with
+  SOCKET bound to the value returned by CONNECT-TO-UDP-SOCKET.
+
+  When control leaves the BODY, either normally or abnormally (such as by use
+  of THROW), the SOCKET are automatically closed.
+
+See also
+
+  COMM:CONNECT-TO-UDP-SERVER
+
+______________________
+| COMM:OPEN-UDP-SOCKET						[Function]
+
+Summary
+
+  Open a UDP socket and bind to local address and port if needed.
+
+Signature
+
+  open-udp-socket &key errorp local-address local-port read-timeout => socket
+
+Arguments and Values
+
+  errorp
+		A boolean.
+  read-timeout
+		A positive number, or nil.
+  local-address
+		nil, an integer or a string.
+  local-port
+		nil, a string or a fixnum.
+  socket
+		A fixnum.
+
+Description
+
+  OPEN-UDP-SOCKET is used for clients to make a unconnected UDP and send
+  messages to any other UDP server, and for servers to listen on local
+  host/port.
+
+  If both LOCAL-HOST and LOCAL-PORT are NIL, OPEN-UDP-SOCKET will not call
+  bind() to this socket.
+
+  If LOCAL-PORT is specified, bind() will be called. For binding on "any"
+  address, the LOCAL-ADDRESS should be NIL (the default).
+
+See also
+
+  COMM:SEND-MESSAGE, COMM:RECEIVE-MESSAGE
+
+______________________
+| COMM:WITH-UDP-SOCKET						[Macro]
+
+Signature
+
+  with-udp-socket (socket &rest options) &body body
+
+Arguments
+
+  socket
+		A symbol.
+  options
+		A list of arguments to be passed to open-udp-socket
+
+Description
+
+  WITH-UDP-SOCKET use OPEN-UDP-SOCKET to open a "unconnected" UDP socket.
+
+  WITH-UDP-SOCKET evaluates the BODY as an implicit PROGN with SOCKET bound
+  to the value returned by OPEN-UDP-SOCKET.
+
+  When control leaves the BODY, either normally or abnormally (such as by use
+  of THROW), the SOCKET are automatically closed.
+
+See also
+
+  COMM:OPEN-UDP-SOCKET
+
+___________________
+| COMM:SEND-MESSAGE						[Function]
+
+Summary
+
+  Send UDP message to a socket, using send()/sendto()
+
+Signature
+
+  send-message socket buffer &optional length host service
+               &key max-buffer-size => bytes
+
+Arguments and Values
+
+  socket
+		A fixnum.
+  buffer
+		A sequence of (unsigned-byte 8).
+  length
+		A fixnum or NIL.
+  hostname
+		An integer or string, or NIL.
+  service
+		A string or a fixnum, or NIL.
+  max-buffer-size
+		A fixnum or NIL
+  bytes
+		A fixnum.
+
+Description
+
+  SEND-MESSAGE is the main function for UDP networking.
+
+  For unconnected sockets, the HOSTNAME and SERVICE arguments should be set,
+  and SEND-MESSAGE call sendto() on SOCKET to send the message.
+
+  For connected sockets, the HOSTNAME and SERVICE arguments should not be set,
+  and SEND-MESSAGE call send() on SOCKET to send the message.
+
+  BUFFER is a SEQUENCE of (unsigned-byte 8), the LENGTH arguments can be
+  used to limit the size of BUFFER to be sent. If LENGTH is NIL, it will be
+  set to the whole length of BUFFER.
+
+  MAX-BUFFER-SIZE is for people who want to optimize this function. By default,
+  A static array, length of 65536, will be created in this function to be
+  passed to send()/sendto(), smaller buffer size can be set through this
+  argument.
+  
+See also
+
+  COMM:OPEN-UDP-SOCKET, COMM:CONNECT-TO-UDP-SOCKET, COMM:RECEIVE-MESSAGE
+
+______________________
+| COMM:RECEIVE-MESSAGE						[Function]
+
+Summary
+
+  Receive message from a socket.
+
+Signature
+
+  receive-message socket &optional buffer length &key read-timeout
+                                                      max-buffer-size
+  => receive-buffer, receive-bytes, remote-address, remote-port
+
+Arguments and Values
+
+  socket
+		A fixnum.
+  buffer
+		A sequence of (unsigned-byte 8), or NIL.
+  length
+		A fixnum or NIL.
+  read-timeout
+		A integer or float number, or NIL.
+  max-buffer-size
+		A fixnum or NIL.
+  receive-buffer
+		A sequence of (unsigned-byte 8).
+  receive-bytes
+		A fixnum.
+  remote-address
+		A string.
+  remote-port
+		A fixnum.
+
+Description
+
+  RECEIVE-MESSAGE is the main function for UDP networking.
+
+  For any type of UDP socket, RECEIVE-MESSAGE use recvfrom() to get packets.
+
+  If the BUFFER argument is set, the receive messages will be put into this
+  sequence and also return as first value. LENGTH can be used to limit BUFFER
+  size.
+
+  REMOTE-ADDRESS is a string contains IPv4 address, like "127.0.0.1".
+
+See also
+
+  COMM:OPEN-UDP-SOCKET, COMM:CONNECT-TO-UDP-SOCKET, COMM:SEND-MESSAGE
+
+________________________________
+| COMM:GET-SOCET-RECEIVE-TIMEOUT				[Function]
+
+Summary
+Signature
+
+  get-socket-receive-timeout socket => timeout
+
+Arguments and Values
+
+  socket
+		A fixnum.
+  timeout
+		A single-float number.
+
+Description
+
+  The TIMEOUT argument is in seconds.
+
+See also
+
+  COMM:SET-SOCKET-RECEIVE-TIMEOUT
+
+_________________________________
+| COMM:SET-SOCKET-RECEIVE-TIMEOUT				[Function]
+
+Summary
+Signature
+
+  set-socket-receive-timeout socket timeout =>
+
+Arguments and Values
+
+  socket
+		A fixnum.
+  timeout
+		A fixnum or float number.
+
+Description
+See also
+
+  COMM:GET-SOCET-RECEIVE-TIMEOUT
+
+_______________________
+| COMM:START-UDP-SERVER						[Function]
+
+Summary
+
+  Start up a simple UDP server process.
+
+Signature
+
+  start-udp-server &key function announce address service process-name
+                        max-buffer-size => process
+
+Arguments and Values
+
+  function
+		A function with type (function (sequence string) sequence)
+  announce
+		A boolean.
+  hostname
+		An integer or string
+  service
+		A string or a fixnum
+  process-name
+		A string.
+  max-buffer-size
+		A fixnum.
+  loop-time
+		A float number.
+  process
+		A process object of LispWorks MP.
+
+Description
+
+  START-UDP-SERVER is the UDP version of LispWorks' START-UP-SERVER.
+
+  START-UDP-SERVER call a FUNCTION to map input data to output, the default
+  map function is a echo server: 
+
+(defun default-udp-server-function (data host)
+  (declare (ignore host))
+  data)
+
+ START-UDP-SERVER start up one seprate thread (process) to serve, every time
+ just only one client can be handled.
+
+ LOOP-TIME is used for optimize. At present, UDP server loop works by calling
+ recvfrom() with a read timeout (= LOOP-TIME, in seconds, default to 1
+ second), set this argument to smaller can cause the server thread be killed
+ faster.
+
+See also
+  COMM:STOP-UDP-SERVER
+
+______________________
+| COMM:STOP-UDP-SERVER						[Function]
+
+Summary
+
+  Stop a UDP server thread.
+
+Signature
+
+  stop-udp-server process &key wait =>
+
+Arguments and Values
+
+  process
+		A process object.
+  wait
+		A boolean.
+
+Description
+
+  STOP-UDP-SERVER kills the server process and close server socket. If WAIT
+  is set to T, the function will wait until process is completely shutdown
+  then return. Sometimes it's useful to wait.
+
+See also
+
+  COMM:START-UDP-SERVER
+
