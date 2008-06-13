@@ -26,8 +26,8 @@
           socket-fd))
       (if errorp (error "cannot create socket") nil))))
 
-(defmacro with-udp-socket ((socket &rest args) &body body)
-  `(let ((,socket (open-udp-socket ,@args)))
+(defmacro with-udp-socket ((socket &rest options) &body body)
+  `(let ((,socket (open-udp-socket ,@options)))
      (unwind-protect
          (progn ,@body)
        (close-socket ,socket))))
@@ -43,7 +43,7 @@
                              :allocation :static)))
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
                                        (len :int
-                                            #+(and lispworks5 (not lispworks5.0))
+					    #-(or lispworks3 lispworks4 lispworks5.0)
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
@@ -74,7 +74,7 @@
         old-timeout)
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
                                        (len :int
-                                            #+(and lispworks5 (not lispworks5.0))
+					    #-(or lispworks3 lispworks4 lispworks5.0)
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
@@ -133,8 +133,8 @@
             (if errorp (error "cannot connect") nil))))
       (if errorp (error "cannot create socket") nil))))
 
-(defmacro with-connected-udp-socket ((socket &rest args) &body body)
-  `(let ((,socket (connect-to-udp-server ,@args)))
+(defmacro with-connected-udp-socket ((socket &rest options) &body body)
+  `(let ((,socket (connect-to-udp-server ,@options)))
      (unwind-protect
          (progn ,@body)
        (close-socket ,socket))))
@@ -154,8 +154,8 @@
                    :element-type element-type
                    :read-timeout read-timeout)))
 
-(defmacro with-udp-stream ((stream &rest args) &body body)
-  `(let ((,stream (open-udp-stream ,@args)))
+(defmacro with-udp-stream ((stream &rest options) &body body)
+  `(let ((,stream (open-udp-stream ,@options)))
      (unwind-protect
          (progn ,@body)
        (close ,stream))))
