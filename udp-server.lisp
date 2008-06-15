@@ -2,12 +2,12 @@
 
 (in-package :comm)
 
-(defun default-udp-server-function (data host)
-  (declare (ignore host))
-  data)
+(defvar *client-address* 0 "client address used in udp process function")
+(defvar *client-port* 0 "client port used in udp process function")
 
 (defun udp-server-loop (socket-fd fn max-buffer-size)
-  (declare (type integer socket-fd))
+  (declare (type integer socket-fd)
+           (ftype (function (sequence) sequence) fn))
   "Main loop for A iterate UDP Server, function type as we declared."
   (mp:ensure-process-cleanup `(udp-server-loop-cleanup ,socket-fd))
   (let ((message (make-array max-buffer-size
@@ -23,30 +23,35 @@
         (loop (let ((n (%recvfrom socket-fd ptr max-buffer-size 0
                                   (fli:copy-pointer client-addr :type '(:struct sockaddr))
                                   len)))
-                (if (plusp n)
-                  (let* ((client-address
-                          (ip-address-string ; translate to string
-                           (ntohl (fli:foreign-slot-value
-                                   (fli:foreign-slot-value client-addr
-                                                           'sin_addr
-                                                           :object-type '(:struct sockaddr_in)
-                                                           :type '(:struct in_addr)
-                                                           :copy-foreign-object nil)
-                                   's_addr
-                                   :object-type '(:struct in_addr)))))
-                         (reply-message (funcall fn (subseq message 0 n) client-address)))
-                    (when reply-message ;; or we don't make a reply message
-                      (let ((length-out (length reply-message)))
-                        (replace message reply-message)
-                        (%sendto socket-fd ptr length-out 0
-                                 (fli:copy-pointer client-addr :type '(:struct sockaddr))
-                                 (fli:dereference len))))))))))))
+                (when (plusp n)
+                  (let ((*client-address*
+                         (ntohl (fli:foreign-slot-value
+                                 (fli:foreign-slot-value client-addr
+                                                         'sin_addr
+                                                         :object-type '(:struct sockaddr_in)
+                                                         :type '(:struct in_addr)
+                                                         :copy-foreign-object nil)
+                                 's_addr
+                                 :object-type '(:struct in_addr))))
+                        (*client-port*
+                         (ntohs (fli:foreign-slot-value client-addr
+                                                        'sin_port
+                                                        :object-type '(:struct sockaddr_in)
+                                                        :type '(:unsigned :short)
+                                                        :copy-foreign-object nil))))
+                    (let ((reply-message (funcall fn (subseq message 0 n))))
+                      (when reply-message ;; or we don't make a reply message
+                        (let ((length-out (length reply-message)))
+                          (replace message reply-message)
+                          (%sendto socket-fd ptr length-out 0
+                                   (fli:copy-pointer client-addr :type '(:struct sockaddr))
+                                   (fli:dereference len)))))))))))))
 
 (defun udp-server-loop-cleanup (process socket-fd)
   (declare (ignore process))
   (close-socket socket-fd))
 
-(defun start-udp-server (&key (function #'default-udp-server-function) (announce nil)
+(defun start-udp-server (&key (function #'identity) (announce nil)
 			 address (service "lispworks")
 			 (process-name (format nil "~S UDP server" service))
                          (loop-time 1)

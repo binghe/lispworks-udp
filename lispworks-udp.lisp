@@ -18,6 +18,7 @@
           get-socket-receive-timeout
           set-socket-receive-timeout
           ;; UDP Server
+          *client-address* *client-port*
           start-udp-server stop-udp-server
           ;; UNIX Domain Socket
           open-unix-domain-stream

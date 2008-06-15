@@ -376,7 +376,7 @@ Signature
 Arguments and Values
 
   function
-		A function with type (function (sequence string) sequence)
+		A function of ftype (function (sequence) sequence)
   announce
 		A boolean.
   hostname
@@ -397,11 +397,14 @@ Description
   START-UDP-SERVER is the UDP version of LispWorks' START-UP-SERVER.
 
   START-UDP-SERVER call a FUNCTION to map input data to output, the default
-  map function is a echo server: 
+  map function is a echo server #'identity
 
-(defun default-udp-server-function (data host)
-  (declare (ignore host))
-  data)
+  There's two special variable can be used in user-defined UDP process function:
+  *client-address* and *client-port*, which be bound client information:
+
+  (defun default-udp-server-function (data)
+    (capi:display-message "client: ~A:~A" *client-address* *client-port*)
+    data)
 
  START-UDP-SERVER start up one seprate thread (process) to serve, every time
  just only one client can be handled.
