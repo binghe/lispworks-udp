@@ -4,8 +4,10 @@
 (defun udp-echo-test-3 (&optional (port 10000))
   (let* ((fn #'(lambda (data)
                  (map '(simple-array (unsigned-byte 8) (*)) #'char-code
-                      (format nil "receive from ~A:~A (~A)"
-                              *client-address* *client-port* (map 'string #'code-char data)))))
+                      (format nil "receive from ~A:~A -> ~A"
+                              (comm:ip-address-string comm:*client-address*)
+                              comm:*client-port*
+                              (map 'string #'code-char data)))))
          (server-process (comm:start-udp-server :function fn :service port)))
     (unwind-protect
         (comm:with-udp-stream (stream "localhost" port :read-timeout 1 :errorp t)
