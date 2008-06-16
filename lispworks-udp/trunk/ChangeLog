@@ -1,4 +1,4 @@
-API Changes from branch 1:
+API Changes between 1.x and 2.x:
 
 * [START-UDP-SERVER] Second argument of UDP-SERVER-LOOP changed
 

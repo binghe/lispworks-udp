@@ -46,9 +46,7 @@
       (comm:stop-udp-server server-process))))
 
 (defun loop-test ()
-  (labels ((echo-fn (data host)
-             (declare (ignore host))
-             data))
+  (labels ((echo-fn (data) data))
     (loop for i from 1 to 10
           do (let ((server (comm:start-udp-server :function #'echo-fn :service 3500 :loop-time 0.3)))
                (comm:with-udp-socket (socket :read-timeout 1)
