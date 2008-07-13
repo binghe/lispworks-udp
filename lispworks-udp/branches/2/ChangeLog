@@ -1,0 +1,8 @@
+API Changes between 1.x and 2.x:
+
+* [START-UDP-SERVER] Second argument of UDP-SERVER-LOOP changed
+
+  Now we bind UDP client's address and port to special variable: *client-address*, *client-port*, and simply UDP-SERVER-LOOP's second arguent to ftype: (function (sequence) sequence). So we can just use #'identity to implement a UDP echo server:
+
+  (COMM:START-UDP-SERVER :FUNCTION #'IDENTITY ...)
+
