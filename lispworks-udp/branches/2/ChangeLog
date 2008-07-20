@@ -6,3 +6,8 @@ API Changes between 1.x and 2.x:
 
   (COMM:START-UDP-SERVER :FUNCTION #'IDENTITY ...)
 
+* [START-UDP-SERVER] New :ARGUMENTS keyword
+
+	Now START-UDP-SERVER has a new :ARGUMENTS keyword, you can pass values into
+	this keyword argument as LIST, and these values will be called with your
+	UDP message processing function.
