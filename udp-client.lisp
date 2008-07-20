@@ -35,7 +35,8 @@
 (defun send-message (socket buffer &optional (length (length buffer)) host service
                             &key (max-buffer-size +max-udp-message-size+))
   "Send message to a socket, using sendto()/send()"
-  (declare (type sequence buffer)
+  (declare (type integer socket)
+           (type sequence buffer)
            (type fixnum length))
   (let ((message (make-array max-buffer-size
                              :element-type '(unsigned-byte 8)

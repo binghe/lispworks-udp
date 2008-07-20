@@ -5,8 +5,9 @@
 (defvar *client-address* 0 "client address used in udp process function")
 (defvar *client-port* 0 "client port used in udp process function")
 
-(defun udp-server-loop (socket-fd fn max-buffer-size)
+(defun udp-server-loop (arguments socket-fd fn max-buffer-size)
   (declare (type integer socket-fd)
+           (type list arguments)
            (ftype (function (sequence) sequence) fn))
   "Main loop for A iterate UDP Server, function type as we declared."
   (mp:ensure-process-cleanup `(udp-server-loop-cleanup ,socket-fd))
@@ -39,7 +40,7 @@
                                                         :object-type '(:struct sockaddr_in)
                                                         :type '(:unsigned :short)
                                                         :copy-foreign-object nil))))
-                    (let ((reply-message (funcall fn (subseq message 0 n))))
+                    (let ((reply-message (apply fn (cons (subseq message 0 n) arguments))))
                       (when reply-message ;; or we don't make a reply message
                         (let ((length-out (length reply-message)))
                           (replace message reply-message)
@@ -51,11 +52,12 @@
   (declare (ignore process))
   (close-socket socket-fd))
 
-(defun start-udp-server (&key (function #'identity) (announce nil)
-			 address (service "lispworks")
-			 (process-name (format nil "~S UDP server" service))
-                         (loop-time 1)
-			 (max-buffer-size +max-udp-message-size+))
+(defun start-udp-server (&key (function #'identity) (arguments nil)
+                              (announce nil)
+                              address (service "lispworks")
+                              (process-name (format nil "~S UDP server" service))
+                              (loop-time 1)
+                              (max-buffer-size +max-udp-message-size+))
   "Something like START-UP-SERVER"
   (let ((socket-fd (open-udp-socket :local-address address
                                     :local-port service
@@ -64,6 +66,7 @@
     (announce-server-started announce socket-fd nil)
     (let ((process (mp:process-run-function process-name nil
                                             #'udp-server-loop
+                                            arguments ; additional arguments for function
                                             socket-fd function max-buffer-size)))
       (setf (getf (mp:process-plist process) 'socket) socket-fd)
       process)))
