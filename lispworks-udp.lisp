@@ -22,9 +22,7 @@
           start-udp-server stop-udp-server
           ;; UNIX Domain Socket
           open-unix-domain-stream
-          connect-to-unix-domain-socket
-          ;; Other
-          close-socket))
+          connect-to-unix-domain-socket))
 
 (defconstant +max-udp-message-size+ 65536)
 
