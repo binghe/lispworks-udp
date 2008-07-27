@@ -37,8 +37,9 @@
   "Send message to a socket, using sendto()/send()"
   (declare (type integer socket)
            (type sequence buffer)
-           (type fixnum length))
-  (let ((message (make-array max-buffer-size
+           (type fixnum length)
+           (ignore max-buffer-size))
+  (let ((message (make-array length ; max-buffer-size
                              :element-type '(unsigned-byte 8)
                              :initial-element 0
                              :allocation :static)))
@@ -52,10 +53,10 @@
         (if (and host service)
           (progn
             (initialize-sockaddr_in client-addr *socket_af_inet* host service "udp")
-            (%sendto socket ptr (min length max-buffer-size) 0
+            (%sendto socket ptr (min length +max-udp-message-size+) 0
                      (fli:copy-pointer client-addr :type '(:struct sockaddr))
                      (fli:dereference len)))
-          (%send socket ptr (min length max-buffer-size) 0))))))
+          (%send socket ptr (min length +max-udp-message-size+) 0))))))
 
 (defun receive-message (socket &optional buffer (length (length buffer))
                                &key read-timeout (max-buffer-size +max-udp-message-size+))
