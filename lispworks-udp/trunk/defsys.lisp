@@ -1,4 +1,5 @@
 ;;;; -*- Mode: Lisp -*-
+;;;; $Id$
 ;;;; System Definition for LispWorks UDP
 
 (in-package :cl-user)
@@ -17,7 +18,8 @@
 	    condition
             udp-client
             udp-server
-            ; rtt
+            rtt
+            rtt-client
             ; unix
             )
   :rules ((:in-order-to :compile :all
