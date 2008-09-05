@@ -1,6 +1,6 @@
+;;;; -*- Mode: Lisp -*-
+;;;; $Id$
 ;;;; UDP Client Support for LispWorks
-
-;;; TODO: Add RTT support for UDP client, see rtt.lisp
 
 (in-package :comm)
 

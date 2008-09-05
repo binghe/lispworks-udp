@@ -1,3 +1,5 @@
+;;;; -*- Mode: Lisp -*-
+;;;; $Id$
 ;;;; UNIX Domain Socket support for LispWorks
 
 ;;; binghe: I took source code from http://www.bew.org.uk/Lisp/

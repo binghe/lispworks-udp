@@ -1,3 +1,5 @@
+;;;; -*- Mode: Lisp -*-
+;;;; $Id$
 ;;;; UDP Support for LispWorks as a COMM package extension
 
 (in-package :comm)
@@ -14,6 +16,8 @@
           open-udp-socket with-udp-socket
           send-message
           receive-message
+          ;; rtt send
+          sync-message
           ;; socket option
           get-socket-receive-timeout
           set-socket-receive-timeout
