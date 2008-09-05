@@ -9,14 +9,14 @@
   (values message 0))
 
 (defun sync-message (socket message host service
-                            &key (max-buffer-size +max-udp-message-size+)
+                            &key (max-receive-length +max-udp-message-size+)
                                  (encode-function #'default-rtt-function)
                                  (decode-function #'default-rtt-function))
-  (let ((rtt-info (and (gethash socket rtt-table)
-                       (setf (gethash socket rtt-table)
-                             (make-instance 'rtt-info-mixin)))))
-  (rtt-newpack rtt-info)
-  (multiple-value-bind (data send-seq) (funcall encode-function message)
+  (let ((rtt-info (or nil ;(gethash socket rtt-table)
+                      (setf (gethash socket rtt-table)
+                            (make-instance 'rtt-info-mixin)))))
+    (rtt-newpack rtt-info)
+    (multiple-value-bind (data send-seq) (funcall encode-function message)
     (let ((data-length (length data)))
       (loop
 	 with send-ts = (rtt-ts rtt-info)
@@ -25,19 +25,33 @@
 	 and continue-p = t
 	 do (progn
 	      (send-message socket data data-length host service)
-              (loop do (progn
+              (loop with timeout-p = nil
+                    do (progn
                          (set-socket-receive-timeout socket (rtt-start rtt-info))
-                         (let ((m (receive-message socket nil max-buffer-size)))
+                         (format t "socket-timeout: ~A~%"
+                                 (get-socket-receive-timeout socket))
+                         (setf timeout-p nil)
+                         (let ((m (receive-message socket nil max-receive-length)))
                            (if m ; got a receive message
                                (multiple-value-setq (recv-message recv-seq)
                                    (funcall decode-function m))
-                             (progn ; timeout
-                               (setf continue-p (rtt-timeout rtt-info))
+                             ;; timeout
+                             (let ((old-rto (slot-value rtt-info 'rto)))
+                               (setf continue-p (rtt-timeout rtt-info)
+                                     timeout-p t)
+                               (warn 'rtt-timeout-warning
+                                     :old-rto old-rto
+                                     :new-rto (slot-value rtt-info 'rto))
                                (unless continue-p
+                                 (error 'rtt-timeout-error)
                                  (rtt-init rtt-info))))))
-                    until (= recv-seq send-seq)
+                    until (and (not timeout-p)
+                               (or (= recv-seq send-seq)
+                                   (warn 'rtt-seq-mismatch-warning
+                                         :send-seq send-seq
+                                         :recv-seq recv-seq)))
                     finally (let ((recv-ts (rtt-ts rtt-info)))
-                              (rtt-stop socket (- recv-ts send-ts))
+                              (rtt-stop rtt-info (- recv-ts send-ts))
                               (return nil))))
 	 until (or recv-message (not continue-p))
 	 finally (return recv-message))))))
