@@ -7,7 +7,7 @@
 
 (defadvice (close-socket clean-rtt-advice :after)
     (socket)
-  (setf (gethash socket *rtt-table*) nil))
+  (remhash socket *rtt-table*))
 
 (defun default-rtt-function (message)
   (values message 0))
@@ -16,8 +16,8 @@
                             &key (max-receive-length +max-udp-message-size+)
                                  (encode-function #'default-rtt-function)
                                  (decode-function #'default-rtt-function))
-  (let ((rtt-info (or (gethash socket rtt-table)
-                      (setf (gethash socket rtt-table)
+  (let ((rtt-info (or (gethash socket *rtt-table*)
+                      (setf (gethash socket *rtt-table*)
                             (make-instance 'rtt-info-mixin)))))
     (rtt-newpack rtt-info)
     (multiple-value-bind (data send-seq) (funcall encode-function message)
