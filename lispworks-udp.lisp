@@ -1,11 +1,6 @@
-;;;; -*- Mode: Lisp -*-
-;;;; $Id$
 ;;;; UDP Support for LispWorks as a COMM package extension
 
 (in-package :comm)
-
-#+win32
-(fli:register-module "ws2_32")
 
 #+win32
 (eval-when (:load-toplevel :execute)
@@ -19,9 +14,6 @@
           open-udp-socket with-udp-socket
           send-message
           receive-message
-          close-socket
-          ;; rtt send
-          sync-message
           ;; socket option
           get-socket-receive-timeout
           set-socket-receive-timeout
@@ -30,7 +22,9 @@
           start-udp-server stop-udp-server
           ;; UNIX Domain Socket
           open-unix-domain-stream
-          connect-to-unix-domain-socket))
+          connect-to-unix-domain-socket
+          ;; Other
+          close-socket))
 
 (defconstant +max-udp-message-size+ 65536)
 
@@ -43,7 +37,7 @@
 (defconstant *sockopt_so_rcvtimeo*
   #+(not linux) #x1006
   #+linux 20
-  "Socket receive timeout")
+  "receive timeout")
 
 (fli:define-c-struct timeval
   (tv-sec :long)
@@ -135,9 +129,3 @@
                                   :type '(:pointer :void))
                 len)
     (float (/ (fli:dereference timeout) 1000))))
-
-#+win32
-(fli:define-foreign-function (wsa-get-last-error "WSAGetLastError" :source)
-    ()
-  :result-type :int
-  :module "ws2_32")

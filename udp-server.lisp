@@ -1,5 +1,3 @@
-;;;; -*- Mode: Lisp -*-
-;;;; $Id$
 ;;;; UDP Server Support for LispWorks
 
 (in-package :comm)

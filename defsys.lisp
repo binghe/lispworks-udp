@@ -1,5 +1,4 @@
 ;;;; -*- Mode: Lisp -*-
-;;;; $Id$
 ;;;; System Definition for LispWorks UDP
 
 (in-package :cl-user)
@@ -15,11 +14,10 @@
   (:package :comm
    :optimize ((safety 3) (debug 3)))
   :members (lispworks-udp
-            rtt
 	    condition
             udp-client
             udp-server
-            rtt-client
+            ; rtt
             ; unix
             )
   :rules ((:in-order-to :compile :all
