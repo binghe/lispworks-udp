@@ -32,6 +32,13 @@
          (progn ,@body)
        (close-socket ,socket))))
 
+(defvar *message-send-buffer*
+  (make-array +max-udp-message-size+
+              :element-type '(unsigned-byte 8)
+              :allocation :static))
+
+(defvar *message-send-lock* (mp:make-lock))
+
 (defun send-message (socket buffer &optional (length (length buffer)) host service
                             &key (max-buffer-size +max-udp-message-size+))
   "Send message to a socket, using sendto()/send()"
@@ -39,24 +46,29 @@
            (type sequence buffer)
            (type fixnum length)
            (ignore max-buffer-size))
-  (let ((message (make-array length ; max-buffer-size
-                             :element-type '(unsigned-byte 8)
-                             :initial-element 0
-                             :allocation :static)))
+  (let ((message *message-send-buffer*))
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
                                        (len :int
 					    #-(or lispworks3 lispworks4 lispworks5.0)
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
-        (replace message buffer :end2 length)
-        (if (and host service)
-          (progn
-            (initialize-sockaddr_in client-addr *socket_af_inet* host service "udp")
-            (%sendto socket ptr (min length +max-udp-message-size+) 0
-                     (fli:copy-pointer client-addr :type '(:struct sockaddr))
-                     (fli:dereference len)))
-          (%send socket ptr (min length +max-udp-message-size+) 0))))))
+        (mp:with-lock (*message-send-lock*)
+          (replace message buffer :end2 length)
+          (if (and host service)
+              (progn
+                (initialize-sockaddr_in client-addr *socket_af_inet* host service "udp")
+                (%sendto socket ptr (min length +max-udp-message-size+) 0
+                         (fli:copy-pointer client-addr :type '(:struct sockaddr))
+                         (fli:dereference len)))
+            (%send socket ptr (min length +max-udp-message-size+) 0)))))))
+
+(defvar *message-receive-buffer*
+  (make-array +max-udp-message-size+
+              :element-type '(unsigned-byte 8)
+              :allocation :static))
+
+(defvar *message-receive-lock* (mp:make-lock))
 
 (defun receive-message (socket &optional buffer (length (length buffer))
                                &key read-timeout (max-buffer-size +max-udp-message-size+))
@@ -69,10 +81,7 @@
    4. remote port"
   (declare (type integer socket)
            (type sequence buffer))
-  (let ((message (make-array max-buffer-size
-                             :element-type '(unsigned-byte 8)
-                             :initial-element 0
-                             :allocation :static))
+  (let ((message *message-receive-buffer*)
         old-timeout)
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
                                        (len :int
@@ -84,34 +93,35 @@
         (when read-timeout
           (setf old-timeout (get-socket-receive-timeout socket))
           (set-socket-receive-timeout socket read-timeout))
-        (let ((n (%recvfrom socket ptr max-buffer-size 0
-                            (fli:copy-pointer client-addr :type '(:struct sockaddr))
-                            len)))
-          ;; restore old read timeout
-          (when (and read-timeout (/= old-timeout read-timeout))
-            (set-socket-receive-timeout socket old-timeout))
-          (if (plusp n)
-            (values (if buffer
-                      (replace buffer message
-			       :end1 (min length max-buffer-size)
-			       :end2 (min n max-buffer-size))
-                      (subseq message 0 (min n max-buffer-size)))
-                    (min n max-buffer-size)
-                    (ip-address-string ; translate to string
-                     (ntohl (fli:foreign-slot-value
-                             (fli:foreign-slot-value client-addr
-                                                     'sin_addr
-                                                     :object-type '(:struct sockaddr_in)
-                                                     :type '(:struct in_addr)
-                                                     :copy-foreign-object nil)
-                             's_addr
-                             :object-type '(:struct in_addr))))
-                    (ntohs (fli:foreign-slot-value client-addr
-                                                   'sin_port
-                                                   :object-type '(:struct sockaddr_in)
-                                                   :type '(:unsigned :short)
-                                                   :copy-foreign-object nil)))
-            (values nil n "" 0)))))))
+        (mp:with-lock (*message-receive-lock*)
+          (let ((n (%recvfrom socket ptr max-buffer-size 0
+                              (fli:copy-pointer client-addr :type '(:struct sockaddr))
+                              len)))
+            ;; restore old read timeout
+            (when (and read-timeout (/= old-timeout read-timeout))
+              (set-socket-receive-timeout socket old-timeout))
+            (if (plusp n)
+                (values (if buffer
+                            (replace buffer message
+                                     :end1 (min length max-buffer-size)
+                                     :end2 (min n max-buffer-size))
+                          (subseq message 0 (min n max-buffer-size)))
+                        (min n max-buffer-size)
+                        (ip-address-string ; translate to string
+                         (ntohl (fli:foreign-slot-value
+                                 (fli:foreign-slot-value client-addr
+                                                         'sin_addr
+                                                         :object-type '(:struct sockaddr_in)
+                                                         :type '(:struct in_addr)
+                                                         :copy-foreign-object nil)
+                                 's_addr
+                                 :object-type '(:struct in_addr))))
+                        (ntohs (fli:foreign-slot-value client-addr
+                                                       'sin_port
+                                                       :object-type '(:struct sockaddr_in)
+                                                       :type '(:unsigned :short)
+                                                       :copy-foreign-object nil)))
+              (values nil n "" 0))))))))
 
 (defun connect-to-udp-server (hostname service &key errorp
                                        local-address local-port read-timeout)
