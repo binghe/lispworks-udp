@@ -67,6 +67,7 @@
      (address-len :int))
   :result-type :int)
 
+#-win32
 (defun set-socket-receive-timeout (socket-fd seconds)
   "Set socket option: RCVTIMEO, argument seconds can be a float number"
   (declare (type integer socket-fd)
@@ -76,12 +77,31 @@
       (fli:with-foreign-slots (tv-sec tv-usec) timeout
         (setf tv-sec sec
               tv-usec (truncate (* 1000000 usec)))
-        (setsockopt socket-fd
-                    *sockopt_sol_socket*
-                    *sockopt_so_rcvtimeo*
-                    (fli:copy-pointer timeout :type '(:pointer :void))
-                    (fli:size-of '(:struct timeval)))))))
+        (if (zerop (setsockopt socket-fd
+                               *sockopt_sol_socket*
+                               *sockopt_so_rcvtimeo*
+                               (fli:copy-pointer timeout
+                                                 :type '(:pointer :void))
+                               (fli:size-of '(:struct timeval))))
+            seconds)))))
 
+#+win32
+(defun set-socket-receive-timeout (socket-fd seconds)
+  "Set socket option: RCVTIMEO, argument seconds can be a float number"
+  (declare (type integer socket-fd)
+           (type number seconds))
+  (fli:with-dynamic-foreign-objects ((timeout :int))
+    (setf (fli:dereference timeout)
+          (truncate (* 1000 seconds)))
+    (if (zerop (setsockopt socket-fd
+                           *sockopt_sol_socket*
+                           *sockopt_so_rcvtimeo*
+                           (fli:copy-pointer timeout
+                                             :type '(:pointer :char))
+                           (fli:size-of :int)))
+        seconds)))
+
+#-win32
 (defun get-socket-receive-timeout (socket-fd)
   "Get socket option: RCVTIMEO, return value is a float number"
   (declare (type integer socket-fd))
@@ -90,7 +110,22 @@
     (getsockopt socket-fd
                 *sockopt_sol_socket*
                 *sockopt_so_rcvtimeo*
-                (fli:copy-pointer timeout :type '(:pointer :void))
+                (fli:copy-pointer timeout
+                                  :type '(:pointer :void))
                 len)
     (fli:with-foreign-slots (tv-sec tv-usec) timeout
       (float (+ tv-sec (/ tv-usec 1000000))))))
+
+#+win32
+(defun get-socket-receive-timeout (socket-fd)
+  "Get socket option: RCVTIMEO, return value is a float number"
+  (declare (type integer socket-fd))
+  (fli:with-dynamic-foreign-objects ((timeout :int)
+                                     (len :int))
+    (getsockopt socket-fd
+                *sockopt_sol_socket*
+                *sockopt_so_rcvtimeo*
+                (fli:copy-pointer timeout
+                                  :type '(:pointer :void))
+                len)
+    (float (/ (fli:dereference timeout) 1000))))
