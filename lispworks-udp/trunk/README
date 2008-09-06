@@ -357,6 +357,11 @@ Arguments and Values
 		A fixnum or float number.
 
 Description
+
+  Set RCVTIMEO option for a socket.
+
+  Note: On Win32, RCVTIMEO won't work until you call bind() on this socket.
+
 See also
 
   COMM:GET-SOCET-RECEIVE-TIMEOUT
@@ -445,3 +450,46 @@ See also
 
   COMM:START-UDP-SERVER
 
+______________________
+| COMM:SYNC-MESSAGE						[Function]
+
+Summary
+
+  Send (then receive) UDP message
+
+Signature
+
+  sync-message socket message host service
+               &key (max-receive-length +max-udp-message-size+)
+                    (encode-function #'default-rtt-function)
+                    (decode-function #'default-rtt-function)
+
+Arguments and Values
+
+  socket
+		A socket fd.
+  message
+		Anything can fit the first arguemnt of encode-function.
+  host
+                Remote hostname or IP address as string or integer
+  service
+                Remote service name or port, as string or integer
+  max-receive-length
+                Max message size when try to receive-message.
+  encode-function
+		A encode function as type of (function (t) (values sequence integer))
+  decode-function
+		A encode function as type of (function (sequence) (values t integer))
+
+Description
+
+  SYNC-MESSAGE is a high-level UDP function. It can fit following requirement on UDP
+  networking:
+
+    * Resend UDP packets when sending or receiving packet get lost.
+    * Compare the "sequence number" of a receiving packet to match the sending one.
+    * Direct send custom message format, let encode/decode function to do the low-level job.
+
+See also
+
+  COMM:SEND-MESSAGE, COMM:RECEIVE-MESSAGE

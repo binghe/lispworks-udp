@@ -15,10 +15,10 @@
   (:package :comm
    :optimize ((safety 3) (debug 3)))
   :members (lispworks-udp
+            rtt
 	    condition
             udp-client
             udp-server
-            rtt
             rtt-client
             ; unix
             )
