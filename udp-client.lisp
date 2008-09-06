@@ -1,6 +1,6 @@
-;;;; -*- Mode: Lisp -*-
-;;;; $Id$
 ;;;; UDP Client Support for LispWorks
+
+;;; TODO: Add RTT support for UDP client, see rtt.lisp
 
 (in-package :comm)
 
@@ -35,11 +35,9 @@
 (defun send-message (socket buffer &optional (length (length buffer)) host service
                             &key (max-buffer-size +max-udp-message-size+))
   "Send message to a socket, using sendto()/send()"
-  (declare (type integer socket)
-           (type sequence buffer)
-           (type fixnum length)
-           (ignore max-buffer-size))
-  (let ((message (make-array length ; max-buffer-size
+  (declare (type sequence buffer)
+           (type fixnum length))
+  (let ((message (make-array max-buffer-size
                              :element-type '(unsigned-byte 8)
                              :initial-element 0
                              :allocation :static)))
@@ -53,10 +51,10 @@
         (if (and host service)
           (progn
             (initialize-sockaddr_in client-addr *socket_af_inet* host service "udp")
-            (%sendto socket ptr (min length +max-udp-message-size+) 0
+            (%sendto socket ptr (min length max-buffer-size) 0
                      (fli:copy-pointer client-addr :type '(:struct sockaddr))
                      (fli:dereference len)))
-          (%send socket ptr (min length +max-udp-message-size+) 0))))))
+          (%send socket ptr (min length max-buffer-size) 0))))))
 
 (defun receive-message (socket &optional buffer (length (length buffer))
                                &key read-timeout (max-buffer-size +max-udp-message-size+))
@@ -111,7 +109,7 @@
                                                    :object-type '(:struct sockaddr_in)
                                                    :type '(:unsigned :short)
                                                    :copy-foreign-object nil)))
-            (values nil n "" 0)))))))
+            (values nil 0 "" 0)))))))
 
 (defun connect-to-udp-server (hostname service &key errorp
                                        local-address local-port read-timeout)

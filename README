@@ -1,4 +1,4 @@
-API Reference of LispWorks-UDP 3.x
+API Reference of LispWorks-UDP 1.x
 
 ______________________
 | COMM:OPEN-UDP-STREAM						[Function]
@@ -357,11 +357,6 @@ Arguments and Values
 		A fixnum or float number.
 
 Description
-
-  Set RCVTIMEO option for a socket.
-
-  Note: On Win32, RCVTIMEO won't work until you call bind() on this socket.
-
 See also
 
   COMM:GET-SOCET-RECEIVE-TIMEOUT
@@ -381,7 +376,7 @@ Signature
 Arguments and Values
 
   function
-		A function of ftype (function (sequence) sequence)
+		A function with type (function (sequence string) sequence)
   announce
 		A boolean.
   hostname
@@ -402,14 +397,11 @@ Description
   START-UDP-SERVER is the UDP version of LispWorks' START-UP-SERVER.
 
   START-UDP-SERVER call a FUNCTION to map input data to output, the default
-  map function is a echo server #'identity
+  map function is a echo server: 
 
-  There's two special variable can be used in user-defined UDP process function:
-  *client-address* and *client-port*, which be bound client information:
-
-  (defun default-udp-server-function (data)
-    (capi:display-message "client: ~A:~A" *client-address* *client-port*)
-    data)
+(defun default-udp-server-function (data host)
+  (declare (ignore host))
+  data)
 
  START-UDP-SERVER start up one seprate thread (process) to serve, every time
  just only one client can be handled.
@@ -450,50 +442,3 @@ See also
 
   COMM:START-UDP-SERVER
 
-______________________
-| COMM:SYNC-MESSAGE						[Function]
-
-Summary
-
-  Send (then receive) UDP message with retransmit support.
-
-Signature
-
-  sync-message socket message &optional host service
-               &key (max-receive-length +max-udp-message-size+)
-                    (encode-function #'default-rtt-function)
-                    (decode-function #'default-rtt-function)
-
-Arguments and Values
-
-  socket
-		A socket fd.
-  message
-		Anything can fit the first arguemnt of encode-function.
-  host
-                Remote hostname or IP address as string or integer
-  service
-                Remote service name or port, as string or integer
-  max-receive-length
-                Max message size when try to receive-message.
-  encode-function
-		A encode function as type of (function (t) (values sequence integer))
-  decode-function
-		A encode function as type of (function (sequence) (values t integer))
-
-Description
-
-  SYNC-MESSAGE is a high-level UDP function. It can fit following requirement on UDP
-  networking:
-
-    * Resend UDP packets when sending or receiving packet get lost.
-    * Compare the "sequence number" of a receiving packet to match the sending one.
-    * Direct send custom message format, let encode/decode function to do the low-level job.
-
-  For sample usage, see RTT-TEST-* functions in test.lisp
-
-  This function is added from LispWorks-UDP 3.0
-
-See also
-
-  COMM:SEND-MESSAGE, COMM:RECEIVE-MESSAGE
