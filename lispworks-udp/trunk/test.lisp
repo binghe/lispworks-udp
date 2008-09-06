@@ -30,7 +30,8 @@
           (let ((data #(1 2 3 4 5 6 7 8 9 10)))
             (comm:send-message socket data (length data) "localhost" port :max-buffer-size 8)
             (format t "SOCKET: Send message: ~A~%" data)
-            (let ((echo (multiple-value-list (comm:receive-message socket nil nil :max-buffer-size 8))))
+            (let ((echo (multiple-value-list (comm:receive-message socket nil nil
+                                                                   :max-buffer-size 8))))
               (format t "SOCKET: Recv message: ~A~%" echo))))
       (comm:stop-udp-server server-process))))
 
@@ -59,3 +60,30 @@
                    (let ((echo (multiple-value-list (comm:receive-message socket))))
                      (format t "SOCKET: Recv message: ~A~%" echo))))
                (princ (comm:stop-udp-server server :wait t))))))
+
+(defun rtt-test-1 (&optional (port 10000))
+  "RTT test"
+  (let ((server-process (comm:start-udp-server :function #'reverse :service port)))
+    (unwind-protect
+        (comm:with-connected-udp-socket (socket "localhost" port :errorp t)
+          (comm:sync-message socket "xxxxABCDEFGH" nil nil
+                             :max-receive-length 8
+                             :encode-function #'(lambda (x)
+                                                  (values (map 'vector #'char-code x) 0))
+                             :decode-function #'(lambda (x)
+                                                  (values (map 'string #'code-char x) 0))))
+      (comm:stop-udp-server server-process))))
+
+(defun rtt-test-2 (&optional (port 10000))
+  "RTT test, no server"
+  (comm:with-udp-socket (socket)
+    (handler-case
+        (comm:sync-message socket "xxxxABCDEFGH" "localhost" port
+                           :max-receive-length 8
+                           :encode-function #'(lambda (x)
+                                                (values (map 'vector #'char-code x) 0))
+                           :decode-function #'(lambda (x)
+                                                (values (map 'string #'code-char x) 0)))
+      (error (c)
+        (format t "Got a condition (~A): ~A~%"
+                (type-of c) c)))))

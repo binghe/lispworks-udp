@@ -12,7 +12,7 @@
 (defun default-rtt-function (message)
   (values message 0))
 
-(defun sync-message (socket message host service
+(defun sync-message (socket message &optional host service
                             &key (max-receive-length +max-udp-message-size+)
                                  (encode-function #'default-rtt-function)
                                  (decode-function #'default-rtt-function))
@@ -33,7 +33,8 @@
                     do (progn
                          (set-socket-receive-timeout socket (rtt-start rtt-info))
                          (setf timeout-p nil)
-                         (let ((m (receive-message socket nil max-receive-length)))
+                         (let ((m (receive-message socket nil nil
+                                                   :max-buffer-size max-receive-length)))
                            (if m ; got a receive message
                                (multiple-value-setq (recv-message recv-seq)
                                    (funcall decode-function m))

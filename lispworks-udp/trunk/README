@@ -1,4 +1,4 @@
-API Reference of LispWorks-UDP 2.x
+API Reference of LispWorks-UDP 3.x
 
 ______________________
 | COMM:OPEN-UDP-STREAM						[Function]
@@ -455,11 +455,11 @@ ______________________
 
 Summary
 
-  Send (then receive) UDP message
+  Send (then receive) UDP message with retransmit support.
 
 Signature
 
-  sync-message socket message host service
+  sync-message socket message &optional host service
                &key (max-receive-length +max-udp-message-size+)
                     (encode-function #'default-rtt-function)
                     (decode-function #'default-rtt-function)
@@ -489,6 +489,10 @@ Description
     * Resend UDP packets when sending or receiving packet get lost.
     * Compare the "sequence number" of a receiving packet to match the sending one.
     * Direct send custom message format, let encode/decode function to do the low-level job.
+
+  For sample usage, see RTT-TEST-* functions in test.lisp
+
+  This function is added from LispWorks-UDP 3.0
 
 See also
 
