@@ -22,8 +22,8 @@
            :documentation "#sec since 1/1/1970 at start, but we use Lisp time here"))
   (:documentation "RTT Info Class"))
 
-(defvar *rtt-rxtmin*    2 "min retransmit timeout value, seconds")
-(defvar *rtt-rxtmax*   60 "max retransmit timeout value, seconds")
+(defvar *rtt-rxtmin*  2.0 "min retransmit timeout value, seconds")
+(defvar *rtt-rxtmax* 60.0 "max retransmit timeout value, seconds")
 (defvar *rtt-maxnrexmt* 3 "max #times to retransmit")
 
 (defmethod rtt-rtocalc ((instance rtt-info-mixin))
@@ -60,7 +60,7 @@
   "return value can be used as: alarm(rtt_start(&foo))"
   (round (slot-value instance 'rto)))
 
-(defmethod rtt-stop ((instance rtt-info-mixin) (ms integer))
+(defmethod rtt-stop ((instance rtt-info-mixin) (ms number))
   (with-slots (rtt srtt rttvar rto) instance
     (setf rtt (/ ms 1000.0))
     (let ((delta (- rtt srtt)))
@@ -70,7 +70,7 @@
 
 (defmethod rtt-timeout ((instance rtt-info-mixin))
   (with-slots (rto nrexmt) instance
-    (setf rto (* rto 2))
+    (setf rto (* rto 2.0))
     (< (incf nrexmt) *rtt-maxnrexmt*)))
 
 (defmethod rtt-newpack ((instance rtt-info-mixin))
