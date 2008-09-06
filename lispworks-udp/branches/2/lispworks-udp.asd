@@ -13,7 +13,7 @@
 (defsystem lispworks-udp
   :description "UDP support for LispWorks"
   :license "MIT"
-  :version "2.1"
+  :version "2.2"
   :author "Chun Tian (binghe) <binghe.lisp@gmail.com>"
   :serial t
   :components ((:file "lispworks-udp")
