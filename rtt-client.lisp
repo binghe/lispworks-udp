@@ -3,7 +3,11 @@
 
 (in-package :comm)
 
-(defvar rtt-table (make-hash-table))
+(defvar *rtt-table* (make-hash-table))
+
+(defadvice (close-socket clean-rtt-advice :after)
+    (socket)
+  (setf (gethash socket *rtt-table*) nil))
 
 (defun default-rtt-function (message)
   (values message 0))
@@ -12,7 +16,7 @@
                             &key (max-receive-length +max-udp-message-size+)
                                  (encode-function #'default-rtt-function)
                                  (decode-function #'default-rtt-function))
-  (let ((rtt-info (or nil ;(gethash socket rtt-table)
+  (let ((rtt-info (or (gethash socket rtt-table)
                       (setf (gethash socket rtt-table)
                             (make-instance 'rtt-info-mixin)))))
     (rtt-newpack rtt-info)
@@ -28,8 +32,6 @@
               (loop with timeout-p = nil
                     do (progn
                          (set-socket-receive-timeout socket (rtt-start rtt-info))
-                         (format t "socket-timeout: ~A~%"
-                                 (get-socket-receive-timeout socket))
                          (setf timeout-p nil)
                          (let ((m (receive-message socket nil max-receive-length)))
                            (if m ; got a receive message
