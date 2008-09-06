@@ -111,7 +111,7 @@
                                                    :object-type '(:struct sockaddr_in)
                                                    :type '(:unsigned :short)
                                                    :copy-foreign-object nil)))
-            (values nil 0 "" 0)))))))
+            (values nil n "" 0)))))))
 
 (defun connect-to-udp-server (hostname service &key errorp
                                        local-address local-port read-timeout)
