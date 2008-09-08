@@ -19,3 +19,9 @@ API Changes between 2.x and 3.x:
 
 * [SYNC-MESSAGE] High-level UDP message send/recv function with
 	retransmit support.
+
+* Require Multi-Processing function: MP:WITH-LOCK
+
+* MAX-BUFFER-SIZE keyword in SEND-MESSAGE/RECEIVE-MESSAGE is obsolete
+	in version 3.1
+

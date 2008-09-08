@@ -263,6 +263,8 @@ Description
   A static array, length of 65536, will be created in this function to be
   passed to send()/sendto(), smaller buffer size can be set through this
   argument.
+
+  Note: MAX-BUFFER-SIZE keyword is obsoleted from LispWorks-UDP 3.1
   
 See also
 
@@ -313,6 +315,8 @@ Description
   size.
 
   REMOTE-ADDRESS is a string contains IPv4 address, like "127.0.0.1".
+
+  Note: MAX-BUFFER-SIZE keyword is obsoleted from LispWorks-UDP 3.1
 
 See also
 
