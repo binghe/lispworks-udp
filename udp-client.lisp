@@ -40,12 +40,12 @@
 (defvar *message-send-lock* (mp:make-lock))
 
 (defun send-message (socket buffer &optional (length (length buffer)) host service
-                            &key (max-buffer-size +max-udp-message-size+))
+                            &key max-buffer-size)
   "Send message to a socket, using sendto()/send()"
   (declare (type integer socket)
            (type sequence buffer)
            (type fixnum length)
-           (ignore max-buffer-size))
+           (ignore max-buffer-size)) ; obsolete keyword
   (let ((message *message-send-buffer*))
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
                                        (len :int
@@ -71,7 +71,7 @@
 (defvar *message-receive-lock* (mp:make-lock))
 
 (defun receive-message (socket &optional buffer (length (length buffer))
-                               &key read-timeout (max-buffer-size +max-udp-message-size+))
+                               &key read-timeout max-buffer-size)
   "Receive message from socket, read-timeout is a float number in seconds.
 
    This function will return 4 values:
@@ -80,7 +80,8 @@
    3. remote address
    4. remote port"
   (declare (type integer socket)
-           (type sequence buffer))
+           (type sequence buffer)
+	   (ignore max-buffer-size)) ; obsolete keyword
   (let ((message *message-receive-buffer*)
         old-timeout)
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
@@ -94,7 +95,7 @@
           (setf old-timeout (get-socket-receive-timeout socket))
           (set-socket-receive-timeout socket read-timeout))
         (mp:with-lock (*message-receive-lock*)
-          (let ((n (%recvfrom socket ptr max-buffer-size 0
+          (let ((n (%recvfrom socket ptr +max-udp-message-size+ 0
                               (fli:copy-pointer client-addr :type '(:struct sockaddr))
                               len)))
             ;; restore old read timeout
@@ -103,10 +104,10 @@
             (if (plusp n)
                 (values (if buffer
                             (replace buffer message
-                                     :end1 (min length max-buffer-size)
-                                     :end2 (min n max-buffer-size))
-                          (subseq message 0 (min n max-buffer-size)))
-                        (min n max-buffer-size)
+                                     :end1 (min length +max-udp-message-size+)
+                                     :end2 (min n +max-udp-message-size+))
+                          (subseq message 0 (min n +max-udp-message-size+)))
+                        (min n +max-udp-message-size+)
                         (ip-address-string ; translate to string
                          (ntohl (fli:foreign-slot-value
                                  (fli:foreign-slot-value client-addr
