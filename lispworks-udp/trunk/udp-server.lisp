@@ -80,4 +80,3 @@
       (when wait
         (mp:process-wait "Wait until UDP server process be killed"
                          #'(lambda () (not (mp:process-alive-p process))))))))
-
