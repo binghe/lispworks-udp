@@ -294,7 +294,7 @@ Arguments and Values
   read-timeout
 		A integer or float number, or NIL.
   max-buffer-size
-		A fixnum or NIL.
+		A fixnum
   receive-buffer
 		A sequence of (unsigned-byte 8).
   receive-bytes
@@ -315,8 +315,6 @@ Description
   size.
 
   REMOTE-ADDRESS is a string contains IPv4 address, like "127.0.0.1".
-
-  Note: MAX-BUFFER-SIZE keyword is obsoleted from LispWorks-UDP 3.1
 
 See also
 
@@ -464,8 +462,7 @@ Summary
 Signature
 
   sync-message socket message &optional host service
-               &key (max-receive-length +max-udp-message-size+)
-                    (encode-function #'default-rtt-function)
+               &key (encode-function #'default-rtt-function)
                     (decode-function #'default-rtt-function)
 
 Arguments and Values
@@ -478,8 +475,6 @@ Arguments and Values
                 Remote hostname or IP address as string or integer
   service
                 Remote service name or port, as string or integer
-  max-receive-length
-                Max message size when try to receive-message.
   encode-function
 		A encode function as type of (function (t) (values sequence integer))
   decode-function
