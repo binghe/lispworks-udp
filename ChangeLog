@@ -17,11 +17,13 @@ API Changes between 1.x and 2.x:
 
 API Changes between 2.x and 3.x:
 
-* [SYNC-MESSAGE] High-level UDP message send/recv function with
+* (3.0) [SYNC-MESSAGE] High-level UDP message send/recv function with
 	retransmit support.
 
-* Require Multi-Processing function: MP:WITH-LOCK
+* (3.1) Require Multi-Processing function: MP:WITH-LOCK
 
-* MAX-BUFFER-SIZE keyword in SEND-MESSAGE/RECEIVE-MESSAGE is obsolete
-	in version 3.1
+* (3.1) MAX-BUFFER-SIZE keyword in SEND-MESSAGE is obsolete.
 
+* (3.3) The SERVICE keyword in START-UDP-SERVER has changed its default
+	value to 0 (zero), which means a dry call (START-UDP-SERVER)
+	will listen on random free (unused) port.

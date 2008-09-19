@@ -41,8 +41,8 @@ Values
 
 Description
 
-  This function is the UDP version of LispWorks' COMM:OPEN-TCP-STREAM. This
-  function can do following things: open a new UDP socket, bind it to local
+  This function is the UDP version of LispWorks' COMM:OPEN-TCP-STREAM. It will
+  do the following things: open a new UDP socket, bind it to local
   address and port if needed, connect to this socket, and create a stream
   object for it.
 
@@ -182,7 +182,8 @@ Description
   bind() to this socket.
 
   If LOCAL-PORT is specified, bind() will be called. For binding on "any"
-  address, the LOCAL-ADDRESS should be NIL (the default).
+  address, the LOCAL-ADDRESS should be NIL (the default), for binding on a
+  free unused port, set LOCAL-PORT to 0 (zero).
 
 See also
 
@@ -321,7 +322,7 @@ See also
   COMM:OPEN-UDP-SOCKET, COMM:CONNECT-TO-UDP-SOCKET, COMM:SEND-MESSAGE
 
 ________________________________
-| COMM:GET-SOCET-RECEIVE-TIMEOUT				[Function]
+| COMM:GET-SOCKET-RECEIVE-TIMEOUT				[Function]
 
 Summary
 Signature
@@ -420,6 +421,10 @@ Description
  recvfrom() with a read timeout (= LOOP-TIME, in seconds, default to 1
  second), set this argument to smaller can cause the server thread be killed
  faster.
+
+ From LispWorks-UDP 3.3, the default SERVICE is set to 0 (zero). That is, a dry
+ call (START-UDP-SERVER) will cause the UDP server listening on a free unused
+ port.
 
 See also
   COMM:STOP-UDP-SERVER
