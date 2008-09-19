@@ -56,7 +56,7 @@
 
 (defun start-udp-server (&key (function #'identity) (arguments nil)
                               (announce nil)
-                              address (service "lispworks")
+                              address (service 0)
                               (process-name (format nil "~S UDP server" service))
                               (loop-time 1)
                               (max-buffer-size +max-udp-message-size+))
