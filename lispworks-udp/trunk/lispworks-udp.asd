@@ -7,18 +7,17 @@
 ;;; Load COMM package
 (require "comm")
 
-;;; Don't warn when I'm hacking the COMM package
-(setf hcl:*packages-for-warn-on-redefinition*
-      (remove "COMM" hcl:*packages-for-warn-on-redefinition* :test #'equal))
-
 (defsystem lispworks-udp
   :description "UDP support for LispWorks"
   :license "MIT"
-  :version "3.3"
+  :version "4.0"
   :author "Chun Tian (binghe) <binghe.lisp@gmail.com>"
   :serial t
-  :components ((:file "lispworks-udp")
+  :components ((:file "package")
                (:file "rtt")
+               (:file "lispworks-udp")
+               (:file "class")
+               (:file "wait-for-input")
 	       (:file "condition")
                (:file "udp-client")
                (:file "udp-server")

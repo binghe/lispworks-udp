@@ -17,7 +17,7 @@
 ;;; LGPL.  Where these conflict, the preamble takes precedence. 
 ;;; uk.org.bew.comm-ext is referenced in the preamble as the "LIBRARY."
 
-(in-package :comm)
+(in-package :comm+)
 
 (defun connect-to-unix-domain-socket (source &key (errorp nil))
   "Something like CONNECT-TO-TCP-SERVER"

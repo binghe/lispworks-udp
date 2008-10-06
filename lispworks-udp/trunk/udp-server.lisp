@@ -2,21 +2,22 @@
 ;;;; $Id$
 ;;;; UDP Server Support for LispWorks
 
-(in-package :comm)
+(in-package :comm+)
 
 (defvar *client-address* 0 "client address used in udp process function")
 (defvar *client-port* 0 "client port used in udp process function")
 
-(defun udp-server-loop (arguments socket-fd fn max-buffer-size)
-  (declare (type integer socket-fd)
+(defun udp-server-loop (arguments socket fn max-buffer-size)
+  (declare (type socket-datagram socket)
            (type list arguments)
            (ftype (function (sequence) sequence) fn))
   "Main loop for A iterate UDP Server, function type as we declared."
-  (mp:ensure-process-cleanup `(udp-server-loop-cleanup ,socket-fd))
+  (mp:ensure-process-cleanup `(udp-server-loop-cleanup ,socket))
   (let ((message (make-array max-buffer-size
                              :element-type '(unsigned-byte 8)
                              :initial-element 0
-                             :allocation :static)))
+                             :allocation :static))
+        (socket-fd (socket-datagram-socket socket)))
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
                                        (len :int
                                             #-(or lispworks3 lispworks4 lispworks5.0)
@@ -50,9 +51,11 @@
                                    (fli:copy-pointer client-addr :type '(:struct sockaddr))
                                    (fli:dereference len)))))))))))))
 
-(defun udp-server-loop-cleanup (process socket-fd)
-  (declare (ignore process))
-  (close-socket socket-fd))
+(defun udp-server-loop-cleanup (process socket)
+  (declare (type socket-datagram socket)
+           (type mp:process process)
+           (ignore process))
+  (close-udp-socket socket))
 
 (defun start-udp-server (&key (function #'identity) (arguments nil)
                               (announce nil)
@@ -61,22 +64,23 @@
                               (loop-time 1)
                               (max-buffer-size +max-udp-message-size+))
   "Something like START-UP-SERVER"
-  (let ((socket-fd (open-udp-socket :local-address address
-                                    :local-port service
-                                    :read-timeout loop-time
-                                    :errorp t)))
+  (let* ((socket (open-udp-socket :local-address address
+                                  :local-port service
+                                  :read-timeout loop-time
+                                  :errorp t))
+         (socket-fd (socket-datagram-socket socket)))
     (announce-server-started announce socket-fd nil)
     (let ((process (mp:process-run-function process-name nil
                                             #'udp-server-loop
                                             arguments ; additional arguments for function
-                                            socket-fd function max-buffer-size)))
-      (setf (getf (mp:process-plist process) 'socket) socket-fd)
+                                            socket function max-buffer-size)))
+      (setf (getf (mp:process-plist process) 'socket) socket)
       process)))
 
 (defun stop-udp-server (process &key wait)
-  (let ((socket-fd (getf (mp:process-plist process) 'socket)))
+  (let ((socket (getf (mp:process-plist process) 'socket)))
     (mp:process-kill process)
-    (prog1 (zerop (close-socket socket-fd))
+    (prog1 (zerop (close-udp-socket socket))
       (when wait
         (mp:process-wait "Wait until UDP server process be killed"
                          #'(lambda () (not (mp:process-alive-p process))))))))
