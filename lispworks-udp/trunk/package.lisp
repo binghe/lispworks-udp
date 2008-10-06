@@ -53,47 +53,11 @@
    #:sync-message
    #:with-connected-udp-socket
    #:with-udp-socket
-   #:with-udp-stream
+   #:with-udp-stream))
 
-   ;; Also export all external symbol of COMM
-   #:attach-ssl
-   #:destroy-ssl
-   #:destroy-ssl-ctx
-   #:detach-ssl
-   #:do-rand-seed
-   #:ensure-ssl
-   #:get-host-entry
-   #:get-socket-address
-   #:get-socket-peer-address
-   #:get-verification-mode
-   #:ip-address-string
-   #:make-ssl-ctx
-   #:open-tcp-stream
-   #:openssl-version
-   #:pem-read
-   #:read-dhparams
-   #:set-verification-mode
-   #:set-ssl-ctx-dh
-   #:set-ssl-ctx-options
-   #:set-ssl-ctx-password-callback
-   #:set-ssl-library-path
-   #:socket-error
-   #:socket-stream
-   #:socket-stream-address
-   #:socket-stream-ctx
-   #:socket-stream-peer-address
-   #:socket-stream-ssl
-   #:ssl-cipher-pointer
-   #:ssl-cipher-pointer-stack
-   #:ssl-closed
-   #:ssl-condition
-   #:ssl-ctx-pointer
-   #:ssl-error
-   #:ssl-failure
-   #:ssl-new
-   #:ssl-pointer
-   #:ssl-x509-lookup
-   #:start-up-server
-   #:start-up-server-and-mp
-   #:string-ip-address
-   #:with-noticed-socket-stream))
+(in-package :comm+)
+
+;;; Export all external symbols of COMM
+(eval-when (:load-toplevel :execute)
+  (do-external-symbols (symbol (find-package :comm))
+    (export symbol)))

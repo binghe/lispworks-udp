@@ -27,3 +27,7 @@ API Changes between 2.x and 3.x:
 * (3.3) The SERVICE keyword in START-UDP-SERVER has changed its default
 	value to 0 (zero), which means a dry call (START-UDP-SERVER)
 	will listen on random free (unused) port.
+
+API Changes between 3.x and 4.x:
+
+* (4.0) new funcion CLOSE-UDP-SOCKET instead of CLOSE-SOCKET

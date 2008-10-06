@@ -35,14 +35,16 @@
                                (setf continue-p (rtt-timeout socket)
                                      timeout-p t)
                                (warn 'rtt-timeout-warning
+                                     :socket socket
                                      :old-rto old-rto
                                      :new-rto (slot-value socket 'rto))
                                (unless continue-p
-                                 (error 'rtt-timeout-error)
+                                 (error 'rtt-timeout-error :socket socket)
                                  (rtt-init socket))))))
                     until (and (not timeout-p)
                                (or (= recv-seq send-seq)
                                    (warn 'rtt-seq-mismatch-warning
+                                         :socket socket
                                          :send-seq send-seq
                                          :recv-seq recv-seq)))
                     finally (let ((recv-ts (rtt-ts socket)))

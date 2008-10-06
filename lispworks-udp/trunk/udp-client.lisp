@@ -24,9 +24,11 @@
                 (make-datagram socket-fd)
                 (progn ;; fail, close socket and return nil
                   (close-socket socket-fd)
-                  (if errorp (error "cannot bind local address/port") nil)))))
+                  (when errorp
+                    (error 'socket-error
+                           :format-string "cannot bind local address/port"))))))
           (make-datagram socket-fd)))
-      (if errorp (error "cannot create socket") nil))))
+      (when errorp (error 'socket-error "cannot create socket")))))
 
 (defmacro with-udp-socket ((socket &rest options) &body body)
   `(let ((,socket (open-udp-socket ,@options)))
@@ -144,8 +146,12 @@
             ;; fail, close socket and return nil
             (progn
               (close-udp-socket socket)
-              (if errorp (error "cannot connect") nil)))))
-      (if errorp (error "cannot create socket") nil))))
+              (when errorp
+                (error 'socket-error
+                       :format-string "cannot connect"))))))
+      (when errorp
+        (error 'socket-error
+               :format-string "cannot create socket")))))
 
 (defmacro with-connected-udp-socket ((socket &rest options) &body body)
   `(let ((,socket (connect-to-udp-server ,@options)))
