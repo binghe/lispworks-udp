@@ -2,7 +2,7 @@
 ;;;; $Id$
 ;;;; UDP Client Support for LispWorks
 
-(in-package :comm)
+(in-package :comm+)
 
 (defun open-udp-socket (&key errorp local-address local-port read-timeout)
   "Open a unconnected UDP socket.
@@ -21,18 +21,18 @@
                         (fli:copy-pointer client-addr :type '(:struct sockaddr))
                         (fli:pointer-element-size client-addr))
                 ;; success, return socket fd
-                socket-fd
+                (make-datagram socket-fd)
                 (progn ;; fail, close socket and return nil
                   (close-socket socket-fd)
                   (if errorp (error "cannot bind local address/port") nil)))))
-          socket-fd))
+          (make-datagram socket-fd)))
       (if errorp (error "cannot create socket") nil))))
 
 (defmacro with-udp-socket ((socket &rest options) &body body)
   `(let ((,socket (open-udp-socket ,@options)))
      (unwind-protect
          (progn ,@body)
-       (close-socket ,socket))))
+       (close-udp-socket ,socket))))
 
 (defvar *message-send-buffer*
   (make-array +max-udp-message-size+
@@ -41,14 +41,12 @@
 
 (defvar *message-send-lock* (mp:make-lock))
 
-(defun send-message (socket buffer &optional (length (length buffer)) host service
-                            &key max-buffer-size)
+(defun send-message (socket buffer &optional (length (length buffer)) host service)
   "Send message to a socket, using sendto()/send()"
-  (declare (type integer socket)
-           (type sequence buffer)
-           (type fixnum length)
-           (ignore max-buffer-size)) ; obsolete keyword
-  (let ((message *message-send-buffer*))
+  (declare (type socket-datagram socket)
+           (type sequence buffer))
+  (let ((message *message-send-buffer*)
+        (socket-fd (socket-datagram-socket socket)))
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
                                        (len :int
 					    #-(or lispworks3 lispworks4 lispworks5.0)
@@ -60,10 +58,10 @@
           (if (and host service)
               (progn
                 (initialize-sockaddr_in client-addr *socket_af_inet* host service "udp")
-                (%sendto socket ptr (min length +max-udp-message-size+) 0
+                (%sendto socket-fd ptr (min length +max-udp-message-size+) 0
                          (fli:copy-pointer client-addr :type '(:struct sockaddr))
                          (fli:dereference len)))
-            (%send socket ptr (min length +max-udp-message-size+) 0)))))))
+              (%send socket-fd ptr (min length +max-udp-message-size+) 0)))))))
 
 (defvar *message-receive-buffer*
   (make-array +max-udp-message-size+
@@ -81,9 +79,10 @@
    2. number of receive bytes
    3. remote address
    4. remote port"
-  (declare (type integer socket)
+  (declare (type socket-datagram socket)
            (type sequence buffer))
   (let ((message *message-receive-buffer*)
+        (socket-fd (socket-datagram-socket socket))
         old-timeout)
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
                                        (len :int
@@ -93,15 +92,15 @@
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
         ;; setup new read timeout
         (when read-timeout
-          (setf old-timeout (get-socket-receive-timeout socket))
-          (set-socket-receive-timeout socket read-timeout))
+          (setf old-timeout (get-socket-receive-timeout socket-fd))
+          (set-socket-receive-timeout socket-fd read-timeout))
         (mp:with-lock (*message-receive-lock*)
-          (let ((n (%recvfrom socket ptr max-buffer-size 0
+          (let ((n (%recvfrom socket-fd ptr max-buffer-size 0
                               (fli:copy-pointer client-addr :type '(:struct sockaddr))
                               len)))
             ;; restore old read timeout
             (when (and read-timeout (/= old-timeout read-timeout))
-              (set-socket-receive-timeout socket old-timeout))
+              (set-socket-receive-timeout socket-fd old-timeout))
             (if (plusp n)
                 (values (if buffer
                             (replace buffer message
@@ -133,37 +132,39 @@
                                  :local-port local-port
                                  :read-timeout read-timeout)))
     (if socket
-      (fli:with-dynamic-foreign-objects ((server-addr (:struct sockaddr_in)))
-        ;; connect to remote address/port
-        (initialize-sockaddr_in server-addr *socket_af_inet* hostname service "udp")
-        (if (connect socket
-                     (fli:copy-pointer server-addr :type '(:struct sockaddr))
-                     (fli:pointer-element-size server-addr))
-          ;; success, return socket fd
-          socket
-          ;; fail, close socket and return nil
-          (progn
-            (close-socket socket)
-            (if errorp (error "cannot connect") nil))))
+      (let ((socket-fd (socket-datagram-socket socket)))
+        (fli:with-dynamic-foreign-objects ((server-addr (:struct sockaddr_in)))
+          ;; connect to remote address/port
+          (initialize-sockaddr_in server-addr *socket_af_inet* hostname service "udp")
+          (if (connect socket-fd
+                       (fli:copy-pointer server-addr :type '(:struct sockaddr))
+                       (fli:pointer-element-size server-addr))
+            ;; success, return socket fd
+            socket
+            ;; fail, close socket and return nil
+            (progn
+              (close-udp-socket socket)
+              (if errorp (error "cannot connect") nil)))))
       (if errorp (error "cannot create socket") nil))))
 
 (defmacro with-connected-udp-socket ((socket &rest options) &body body)
   `(let ((,socket (connect-to-udp-server ,@options)))
      (unwind-protect
          (progn ,@body)
-       (close-socket ,socket))))
+       (close-udp-socket ,socket))))
 
 (defun open-udp-stream (hostname service &key (direction :io)
                                  (element-type 'base-char)
                                  errorp read-timeout
                                  local-address local-port)
   "Something like OPEN-TCP-STREAM"
-  (let ((socket (connect-to-udp-server hostname service
-                                       :errorp errorp
-                                       :local-address local-address
-                                       :local-port local-port)))
+  (let* ((socket (connect-to-udp-server hostname service
+                                        :errorp errorp
+                                        :local-address local-address
+                                        :local-port local-port))
+         (socket-fd (socket-datagram-socket socket)))
     (make-instance 'socket-stream
-                   :socket socket
+                   :socket socket-fd
                    :direction direction
                    :element-type element-type
                    :read-timeout read-timeout)))

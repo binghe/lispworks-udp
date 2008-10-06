@@ -2,7 +2,7 @@
 ;;;; $Id$
 ;;;; Condition for LispWorks-UDP
 
-(in-package :comm)
+(in-package :comm+)
 
 (define-condition rtt-timeout-warning (warning)
   ((old-rto :type short-float

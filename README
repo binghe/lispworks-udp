@@ -324,7 +324,6 @@ See also
 ________________________________
 | COMM:GET-SOCKET-RECEIVE-TIMEOUT				[Function]
 
-Summary
 Signature
 
   get-socket-receive-timeout socket => timeout
@@ -347,10 +346,9 @@ See also
 _________________________________
 | COMM:SET-SOCKET-RECEIVE-TIMEOUT				[Function]
 
-Summary
 Signature
 
-  set-socket-receive-timeout socket timeout =>
+  set-socket-receive-timeout socket timeout => timeout
 
 Arguments and Values
 
@@ -361,9 +359,11 @@ Arguments and Values
 
 Description
 
-  Set RCVTIMEO option for a socket.
+  Set RCVTIMEO option for a socket. If successful, the timeout argument will
+  be returned, or NIL.
 
-  Note: On Win32, RCVTIMEO won't work until you call bind() on this socket.
+  Note: On Win32, RCVTIMEO won't work until you have calld bind() on the socket,
+        this can be done by set LOCAL-PORT to 0 (zero) when creating a socket.
 
 See also
 

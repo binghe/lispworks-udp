@@ -1,7 +1,7 @@
 ;;;; -*- Mode: Lisp -*-
 ;;;; $Id$
 
-(in-package :comm)
+(in-package :comm+)
 
 ;;; UNIX Network Programming v1 - Networking APIs: Sockets and XTI
 ;;;  Chapter 20: Advance UDP Sockets

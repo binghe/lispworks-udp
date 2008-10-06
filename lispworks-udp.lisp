@@ -2,7 +2,7 @@
 ;;;; $Id$
 ;;;; UDP Support for LispWorks as a COMM package extension
 
-(in-package :comm)
+(in-package :comm+)
 
 #+win32
 (fli:register-module "ws2_32")
@@ -10,27 +10,6 @@
 #+win32
 (eval-when (:load-toplevel :execute)
   (ensure-sockets))
-
-;;; Exports into COMM Package
-(export '(;; UDP Client
-          open-udp-stream with-udp-stream
-          connect-to-udp-server
-          with-connected-udp-socket
-          open-udp-socket with-udp-socket
-          send-message
-          receive-message
-          close-socket
-          ;; rtt send
-          sync-message
-          ;; socket option
-          get-socket-receive-timeout
-          set-socket-receive-timeout
-          ;; UDP Server
-          *client-address* *client-port*
-          start-udp-server stop-udp-server
-          ;; UNIX Domain Socket
-          open-unix-domain-stream
-          connect-to-unix-domain-socket))
 
 (defconstant +max-udp-message-size+ 65536)
 
@@ -74,7 +53,7 @@
   :result-type :int)
 
 #-win32
-(defun set-socket-receive-timeout (socket-fd seconds)
+(defmethod set-socket-receive-timeout ((socket-fd integer) seconds)
   "Set socket option: RCVTIMEO, argument seconds can be a float number"
   (declare (type integer socket-fd)
            (type number seconds))
@@ -92,8 +71,9 @@
             seconds)))))
 
 #+win32
-(defun set-socket-receive-timeout (socket-fd seconds)
-  "Set socket option: RCVTIMEO, argument seconds can be a float number"
+(defmethod set-socket-receive-timeout ((socket-fd integer) seconds)
+  "Set socket option: RCVTIMEO, argument seconds can be a float number.
+   On win32, you must bind the socket before use this function."
   (declare (type integer socket-fd)
            (type number seconds))
   (fli:with-dynamic-foreign-objects ((timeout :int))
@@ -108,7 +88,7 @@
         seconds)))
 
 #-win32
-(defun get-socket-receive-timeout (socket-fd)
+(defmethod get-socket-receive-timeout ((socket-fd integer))
   "Get socket option: RCVTIMEO, return value is a float number"
   (declare (type integer socket-fd))
   (fli:with-dynamic-foreign-objects ((timeout (:struct timeval))
@@ -123,7 +103,7 @@
       (float (+ tv-sec (/ tv-usec 1000000))))))
 
 #+win32
-(defun get-socket-receive-timeout (socket-fd)
+(defmethod get-socket-receive-timeout ((socket-fd integer))
   "Get socket option: RCVTIMEO, return value is a float number"
   (declare (type integer socket-fd))
   (fli:with-dynamic-foreign-objects ((timeout :int)
