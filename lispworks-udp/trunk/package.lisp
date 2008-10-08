@@ -39,12 +39,13 @@
     #:*rtt-rxtmin*
     #:close-datagram
     #:connect-to-udp-server
-    #:connect-to-unix-pathname
+    #:connect-to-unix-path
     #:get-socket-pathname
     #:get-socket-peer-pathname
     #:get-socket-receive-timeout
+    #:inet-datagram ; class
     #:send-message
-    #:socket-datagram
+    #:socket-datagram ; class
     #:socket-datagram-socket
     #:open-udp-socket
     #:open-udp-stream
@@ -55,9 +56,12 @@
     #:start-udp-server
     #:stop-udp-server
     #:sync-message
+    #:unix-datagram ; class
     #:with-connected-udp-socket
+    #:with-connected-unix-socket
     #:with-udp-socket
-    #:with-udp-stream))
+    #:with-udp-stream
+    #:with-unix-socket))
 
 (in-package :comm+)
 
