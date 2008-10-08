@@ -17,6 +17,8 @@
    #:bind
    #:close-socket
    #:connect
+   #:getpeername
+   #:getsockname
    #:getsockopt
    #:in_addr
    #:initialize-sockaddr_in
@@ -28,7 +30,8 @@
    #:sin_port
    #:sockaddr
    #:sockaddr_in
-   #:socket)
+   #:socket
+   #+win32 #:ensure-sockets)
 
   (:export
    #:*client-address*
@@ -45,7 +48,7 @@
    #:socket-datagram-socket
    #:open-udp-socket
    #:open-udp-stream
-   #:open-unix-domain-stream
+   #:open-unix-stream
    #:receive-message
    #:set-socket-receive-timeout
    #:start-udp-server
