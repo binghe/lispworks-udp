@@ -36,18 +36,17 @@
          (progn ,@body)
        (close-datagram ,socket))))
 
-(defvar *message-send-buffer*
+(defvar *inet-message-send-buffer*
   (make-array +max-udp-message-size+
               :element-type '(unsigned-byte 8)
               :allocation :static))
 
-(defvar *message-send-lock* (mp:make-lock))
+(defvar *inet-message-send-lock* (mp:make-lock))
 
-(defun send-message (socket buffer &optional (length (length buffer)) host service)
+(defmethod send-message ((socket inet-datagram) buffer &key (length (length buffer)) host service)
   "Send message to a socket, using sendto()/send()"
-  (declare (type socket-datagram socket)
-           (type sequence buffer))
-  (let ((message *message-send-buffer*)
+  (declare (type sequence buffer))
+  (let ((message *inet-message-send-buffer*)
         (socket-fd (socket-datagram-socket socket)))
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
                                        (len :int
@@ -55,7 +54,7 @@
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_in))))
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
-        (mp:with-lock (*message-send-lock*)
+        (mp:with-lock (*inet-message-send-lock*)
           (replace message buffer :end2 length)
           (if (and host service)
               (progn
@@ -65,15 +64,15 @@
                          (fli:dereference len)))
               (%send socket-fd ptr (min length +max-udp-message-size+) 0)))))))
 
-(defvar *message-receive-buffer*
+(defvar *inet-message-receive-buffer*
   (make-array +max-udp-message-size+
               :element-type '(unsigned-byte 8)
               :allocation :static))
 
-(defvar *message-receive-lock* (mp:make-lock))
+(defvar *inet-message-receive-lock* (mp:make-lock))
 
-(defun receive-message (socket &optional buffer (length (length buffer))
-                               &key read-timeout (max-buffer-size +max-udp-message-size+))
+(defmethod receive-message ((socket inet-datagram) &key buffer (length (length buffer))
+                            read-timeout (max-buffer-size +max-udp-message-size+))
   "Receive message from socket, read-timeout is a float number in seconds.
 
    This function will return 4 values:
@@ -83,7 +82,7 @@
    4. remote port"
   (declare (type socket-datagram socket)
            (type sequence buffer))
-  (let ((message *message-receive-buffer*)
+  (let ((message *inet-message-receive-buffer*)
         (socket-fd (socket-datagram-socket socket))
         old-timeout)
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in))
@@ -96,7 +95,7 @@
         (when read-timeout
           (setf old-timeout (get-socket-receive-timeout socket-fd))
           (set-socket-receive-timeout socket-fd read-timeout))
-        (mp:with-lock (*message-receive-lock*)
+        (mp:with-lock (*inet-message-receive-lock*)
           (let ((n (%recvfrom socket-fd ptr max-buffer-size 0
                               (fli:copy-pointer client-addr :type '(:struct sockaddr))
                               len)))
