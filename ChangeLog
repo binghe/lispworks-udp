@@ -30,6 +30,17 @@ API Changes between 2.x and 3.x:
 
 API Changes between 3.x and 4.x:
 
-* (4.0) Change from COMM package to COMM+ package!!! (all external symbols of COMM is also exported)
+* Change from COMM package to COMM+ package!!! (all external symbols of COMM is also exported)
 
-* (4.0) new funcion CLOSE-UDP-SOCKET instead of CLOSE-SOCKET
+* Add support for UNIX Domain socket (both stream and datagram, but no server support)
+  Related new functions: OPEN-UNIX-STREAM, OPEN-UNIX-SOCKET, CONNECT-TO-UNIX-PATH
+
+* New class (INET-DATAGRAM and UNIX-DATAGRAM), both subclass of SOCKET-DATAGRAM
+
+* new funcion CLOSE-DATAGRAM instead of CLOSE-SOCKET
+
+* [API Change] SEND-MESSAGE and RECEIVE-MESSAGE's optional arguments become keyword arguments
+
+* [API Change] RECEIVE-MESSAGE's 3rd return value (remote-address) is a 32bit integer now,
+  If you want to string-like IPv4 address, call COMM:IP-ADDRESS-STRING yourself.
+

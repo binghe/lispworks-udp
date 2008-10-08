@@ -21,13 +21,13 @@
                         (fli:copy-pointer client-addr :type '(:struct sockaddr))
                         (fli:pointer-element-size client-addr))
                 ;; success, return socket fd
-                (make-datagram socket-fd)
+                (make-inet-datagram socket-fd)
                 (progn ;; fail, close socket and return nil
                   (close-socket socket-fd)
                   (when errorp
                     (error 'socket-error
                            :format-string "cannot bind local address/port"))))))
-          (make-datagram socket-fd)))
+          (make-inet-datagram socket-fd)))
       (when errorp (error 'socket-error "cannot create socket")))))
 
 (defmacro with-udp-socket ((socket &rest options) &body body)
@@ -109,21 +109,20 @@
                                      :end2 (min n max-buffer-size))
                           (subseq message 0 (min n max-buffer-size)))
                         (min n max-buffer-size)
-                        (ip-address-string ; translate to string
-                         (ntohl (fli:foreign-slot-value
-                                 (fli:foreign-slot-value client-addr
-                                                         'sin_addr
-                                                         :object-type '(:struct sockaddr_in)
-                                                         :type '(:struct in_addr)
-                                                         :copy-foreign-object nil)
-                                 's_addr
-                                 :object-type '(:struct in_addr))))
+                        (ntohl (fli:foreign-slot-value
+                                (fli:foreign-slot-value client-addr
+                                                        'sin_addr
+                                                        :object-type '(:struct sockaddr_in)
+                                                        :type '(:struct in_addr)
+                                                        :copy-foreign-object nil)
+                                's_addr
+                                :object-type '(:struct in_addr)))
                         (ntohs (fli:foreign-slot-value client-addr
                                                        'sin_port
                                                        :object-type '(:struct sockaddr_in)
                                                        :type '(:unsigned :short)
                                                        :copy-foreign-object nil)))
-              (values nil n "" 0))))))))
+                (values nil n 0 0))))))))
 
 (defun connect-to-udp-server (hostname service &key errorp
                                        local-address local-port read-timeout)

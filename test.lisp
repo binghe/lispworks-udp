@@ -28,9 +28,9 @@
     (unwind-protect
         (comm+:with-udp-socket (socket :read-timeout 10)
           (let ((data #(1 2 3 4 5 6 7 8 9 10)))
-            (comm+:send-message socket data (length data) "localhost" port)
+            (comm+:send-message socket data :host "localhost" :service port)
             (format t "SOCKET: Send message: ~A~%" data)
-            (let ((echo (multiple-value-list (comm+:receive-message socket nil nil
+            (let ((echo (multiple-value-list (comm+:receive-message socket
                                                                    :max-buffer-size 8))))
               (format t "SOCKET: Recv message: ~A~%" echo))))
       (comm+:stop-udp-server server-process))))
@@ -43,9 +43,9 @@
     (unwind-protect
         (comm+:with-connected-udp-socket (socket "localhost" port :read-timeout 1 :errorp t)
           (let ((data #(1 2 3 4 5 6 7 8 9 10)))
-            (princ (comm+:send-message socket data (length data) nil nil))
+            (princ (comm+:send-message socket data :host nil :service nil))
             (format t "SOCKET: Send message: ~A~%" data)
-            (let ((echo (multiple-value-list (comm+:receive-message socket nil nil :max-buffer-size 8))))
+            (let ((echo (multiple-value-list (comm+:receive-message socket :max-buffer-size 8))))
               (format t "SOCKET: Recv message: ~A~%" echo))))
       (comm+:stop-udp-server server-process))))
 
@@ -55,7 +55,7 @@
           do (let ((server (comm+:start-udp-server :function #'echo-fn :service 3500 :loop-time 0.3)))
                (comm+:with-udp-socket (socket :read-timeout 1)
                  (let ((data #(1 2 3 4 5 6 7 8 9 10)))
-                   (comm+:send-message socket data (length data) "localhost" 3500)
+                   (comm+:send-message socket data :host "localhost" :service 3500)
                    (format t "SOCKET: Send message: ~A~%" data)
                    (let ((echo (multiple-value-list (comm+:receive-message socket))))
                      (format t "SOCKET: Recv message: ~A~%" echo))))
@@ -66,7 +66,7 @@
   (let ((server-process (comm+:start-udp-server :function #'reverse :service port)))
     (unwind-protect
         (comm+:with-connected-udp-socket (socket "localhost" port :errorp t)
-          (comm+:sync-message socket "xxxxABCDEFGH" nil nil
+          (comm+:sync-message socket "xxxxABCDEFGH"
                              :max-receive-length 8
                              :encode-function #'(lambda (x)
                                                   (values (map 'vector #'char-code x) 0))
@@ -78,12 +78,14 @@
   "RTT test, no server"
   (comm+:with-udp-socket (socket)
     (handler-case
-        (comm+:sync-message socket "xxxxABCDEFGH" "localhost" port
-                           :max-receive-length 8
-                           :encode-function #'(lambda (x)
-                                                (values (map 'vector #'char-code x) 0))
-                           :decode-function #'(lambda (x)
-                                                (values (map 'string #'code-char x) 0)))
+        (comm+:sync-message socket "xxxxABCDEFGH"
+                            :host "localhost"
+                            :service port
+                            :max-receive-length 8
+                            :encode-function #'(lambda (x)
+                                                 (values (map 'vector #'char-code x) 0))
+                            :decode-function #'(lambda (x)
+                                                 (values (map 'string #'code-char x) 0)))
       (error (c)
         (format t "Got a condition (~A): ~A~%"
                 (type-of c) c)))))

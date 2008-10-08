@@ -105,7 +105,7 @@ Arguments and Values
   local-port
 		nil, a string or a fixnum.
   socket
-		A fixnum.
+		A INET-DATAGRAM instance
 
 Description
 
@@ -170,7 +170,7 @@ Arguments and Values
   local-port
 		nil, a string or a fixnum.
   socket
-		A fixnum.
+		A INET-DATAGRAM instance
 
 Description
 
@@ -226,13 +226,13 @@ Summary
 
 Signature
 
-  send-message socket buffer &optional length host service
-               &key max-buffer-size => bytes
+  send-message socket buffer
+               &key length host service path path => bytes
 
 Arguments and Values
 
   socket
-		A fixnum.
+		A SOCKET-DATAGRAM instance
   buffer
 		A sequence of (unsigned-byte 8).
   length
@@ -241,14 +241,14 @@ Arguments and Values
 		An integer or string, or NIL.
   service
 		A string or a fixnum, or NIL.
-  max-buffer-size
-		A fixnum or NIL
+  path
+                A string or pathname for UNIX domain socket
   bytes
 		A fixnum.
 
 Description
 
-  SEND-MESSAGE is the main function for UDP networking.
+  SEND-MESSAGE is the main function for DATAGRAM networking.
 
   For unconnected sockets, the HOSTNAME and SERVICE arguments should be set,
   and SEND-MESSAGE call sendto() on SOCKET to send the message.
@@ -259,13 +259,6 @@ Description
   BUFFER is a SEQUENCE of (unsigned-byte 8), the LENGTH arguments can be
   used to limit the size of BUFFER to be sent. If LENGTH is NIL, it will be
   set to the whole length of BUFFER.
-
-  MAX-BUFFER-SIZE is for people who want to optimize this function. By default,
-  A static array, length of 65536, will be created in this function to be
-  passed to send()/sendto(), smaller buffer size can be set through this
-  argument.
-
-  Note: MAX-BUFFER-SIZE keyword is obsoleted from LispWorks-UDP 3.1
   
 See also
 
@@ -280,14 +273,16 @@ Summary
 
 Signature
 
-  receive-message socket &optional buffer length &key read-timeout
-                                                      max-buffer-size
+  receive-message socket &key buffer length read-timeout max-buffer-size
+
   => receive-buffer, receive-bytes, remote-address, remote-port
+
+  => receive-buffer, receive-bytes, peer-pathname
 
 Arguments and Values
 
   socket
-		A fixnum.
+		A SOCKET-DATAGRAM instance
   buffer
 		A sequence of (unsigned-byte 8), or NIL.
   length
@@ -301,13 +296,15 @@ Arguments and Values
   receive-bytes
 		A fixnum.
   remote-address
-		A string.
+		A integer indicate 32bit IPv4 address
   remote-port
 		A fixnum.
+  peer-pathname
+                A string indicate a pathname.
 
 Description
 
-  RECEIVE-MESSAGE is the main function for UDP networking.
+  RECEIVE-MESSAGE is the main function for DATAGRAM networking.
 
   For any type of UDP socket, RECEIVE-MESSAGE use recvfrom() to get packets.
 
@@ -315,7 +312,9 @@ Description
   sequence and also return as first value. LENGTH can be used to limit BUFFER
   size.
 
-  REMOTE-ADDRESS is a string contains IPv4 address, like "127.0.0.1".
+  REMOTE-ADDRESS is a 32bit integer IPv4 address.
+
+  Note: In version prior 4.0, REMOTE-ADDRESS is a string.
 
 See also
 
@@ -501,3 +500,80 @@ Description
 See also
 
   COMM:SEND-MESSAGE, COMM:RECEIVE-MESSAGE
+
+______________________
+| COMM:OPEN-UNIX-STREAM						[Function]
+
+Summary
+
+  Attempts to connect to a local path (UNIX Domain Socket)
+
+Signature
+
+  open-unix-stream pathname
+                   &key direction element-type errorp read-timeout
+
+  => stream-object
+
+Arguments
+
+  pathname
+		A string or pathname object
+  direction
+		One of :input, :output or :io
+  element-type
+		base-char or a subtype of integer.
+  errorp
+		A boolean.
+  read-timeout
+		A positive number, or nil.
+
+Values
+
+  stream-object
+		A socket stream.
+
+Description
+
+  This function is the UNIX domain socket version of LispWorks' COMM:OPEN-TCP-STREAM.
+  It will do the following things: open a new stream domain socket, connect to a local path,
+  and create a SOCKET-STREAM object for it.
+
+See also
+
+  COMM:OPEN-TCP-STREAM
+
+____________________________
+| COMM:CONNECT-TO-UNIX-PATH					[Function]
+
+Summary
+
+  Attempts to connect to local path (UNIX domain socket)
+
+Signature
+
+  connect-to-unix-path pathname &key errorp read-timeout
+  => socket
+
+Arguments and Values
+
+  pathname
+		An integer or string
+  errorp
+		A boolean.
+  read-timeout
+		A positive number, or nil.
+  socket
+		A UNIX-DATAGRAM instance
+
+Description
+
+  CONNECT-TO-UDP-SERVER is for datagram UNIX domain socket
+
+  Clients can use this socket to send/receive messages to/from only one
+  destination.
+
+See also
+
+  COMM:OPEN-UNIX-STREAM, COMM:SEND-MESSAGE, COMM:RECEIVE-MESSAGE
+

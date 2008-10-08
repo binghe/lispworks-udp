@@ -22,4 +22,5 @@
                (:file "udp-client")
                (:file "udp-server")
                (:file "rtt-client")
-               (:file "unix")))
+               #+(not win32) (:file "unix")
+               #+(not win32) (:file "unix-server")))

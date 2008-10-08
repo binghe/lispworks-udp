@@ -6,10 +6,11 @@
 (defun default-rtt-function (message)
   (values message 0))
 
-(defun sync-message (socket message &optional host service
-                                    &key (max-receive-length +max-udp-message-size+)
-                                         (encode-function #'default-rtt-function)
-                                         (decode-function #'default-rtt-function))
+(defun sync-message (socket message &key host service
+                            (max-receive-length +max-udp-message-size+)
+                            (encode-function #'default-rtt-function)
+                            (decode-function #'default-rtt-function))
+  (declare (type inet-datagram socket))
   (let ((socket-fd (socket-datagram-socket socket)))
     (rtt-newpack socket)
     (multiple-value-bind (data send-seq) (funcall encode-function message)
@@ -20,12 +21,13 @@
          and recv-seq = -1
          and continue-p = t
          do (progn
-              (send-message socket data data-length host service)
+              (send-message socket data
+                            :length data-length :host host :service service)
               (loop with timeout-p = nil
                     do (progn
                          (set-socket-receive-timeout socket-fd (rtt-start socket))
                          (setf timeout-p nil)
-                         (let ((m (receive-message socket nil nil
+                         (let ((m (receive-message socket
                                                    :max-buffer-size max-receive-length)))
                            (if m ; got a receive message
                              (multiple-value-setq (recv-message recv-seq)

@@ -2,10 +2,7 @@
 ;;;; $Id$
 ;;;; UNIX Domain Socket support for LispWorks
 
-;;; binghe: I took source code from http://www.bew.org.uk/Lisp/
-;;; and modify it into a pure lisp package without C code which can be used
-;;; without a C compiler (for example, most Windows and some Macintosh)
-
+;;; NOTE: OPEN-UNIX-STREAM (and only it) is from http://www.bew.org.uk/Lisp/
 ;;; Original license of UNIX Domain Socket support for LispWorks:
 
 ;;; Copyright 2001, Barry Wilkes <bew@bcs.org.uk>
@@ -48,6 +45,7 @@
       (values))))
 
 (defun get-socket-peer-pathname (socket-fd)
+  "Get the connect pathname of a unix domain socket, only useful on stream socket"
   (declare (type integer socket-fd))
   (fli:with-dynamic-foreign-objects ((sock-addr (:struct sockaddr_un))
                                      (len :int
@@ -64,6 +62,7 @@
                                          :allow-null t)))))
 
 (defun get-socket-pathname (socket-fd)
+  "Get the bind pathname of a unix domain socket, only useful on stream socket"
   (declare (type integer socket-fd))
   (fli:with-dynamic-foreign-objects ((sock-addr (:struct sockaddr_un))
                                      (len :int
@@ -80,7 +79,7 @@
                                          :allow-null t)))))
 
 (defun open-unix-socket (&key (protocol :datagram)
-                              errorp local-pathname read-timeout)
+                              errorp path read-timeout)
   (let ((socket-fd (socket *socket_af_unix*
 			   (ecase protocol
                              (:stream *socket_sock_stream*)
@@ -89,19 +88,19 @@
     (if socket-fd
       (progn
         (when read-timeout (set-socket-receive-timeout socket-fd read-timeout))
-        (if local-pathname
+        (if path
           (progn
             (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_un)))
-              (initialize-sockaddr_un client-addr *socket_af_unix* local-pathname)
+              (initialize-sockaddr_un client-addr *socket_af_unix* path)
               (ignore-errors
-                (delete-file local-pathname))
+                (delete-file path))
               (if (bind socket-fd
                         (fli:copy-pointer client-addr :type '(:struct sockaddr))
                         (fli:pointer-element-size client-addr))
                 ;; success, return socket fd
                 (ecase protocol
                   (:stream socket-fd)
-                  (:datagram (make-datagram socket-fd)))
+                  (:datagram (make-unix-datagram socket-fd path)))
                 (progn ;; fail, close socket and return nil
                   (close-socket socket-fd)
                   (when errorp
@@ -109,11 +108,18 @@
                            :format-string "cannot bind local pathname"))))))
           (ecase protocol
             (:stream socket-fd)
-            (:datagram (make-datagram socket-fd)))))
-      (when errorp (error 'socket-error "cannot create socket")))))
+            (:datagram (make-unix-datagram socket-fd)))))
+      (when errorp (error 'socket-error
+                          :format-string "cannot create socket")))))
 
-(defun connect-to-unix-pathname (pathname &key (protocol :datagram)
-                                               errorp read-timeout)
+(defmacro with-unix-socket ((socket &rest options) &body body)
+  `(let ((,socket (open-unix-socket ,@options)))
+     (unwind-protect
+         (progn ,@body)
+       (close-datagram ,socket))))
+
+(defun connect-to-unix-path (pathname &key (protocol :datagram)
+                                      errorp read-timeout)
   "Something like CONNECT-TO-TCP-SERVER"
   (declare (type (or pathname string) pathname))
   (let ((socket (open-unix-socket :protocol protocol
@@ -145,14 +151,20 @@
           (error 'socket-error
                  :format-string "cannot create socket"))))))
 
+(defmacro with-connected-unix-socket ((socket &rest options) &body body)
+  `(let ((,socket (connect-to-unix-path ,@options)))
+     (unwind-protect
+         (progn ,@body)
+       (close-datagram ,socket))))
+
 (defun open-unix-stream (pathname &key (direction :io)
                                   (element-type 'base-char)
                                   errorp read-timeout)
   "Open a UNIX domain socket stream"
   (declare (type (or pathname string) pathname))
-  (let ((socket-fd (connect-to-unix-pathname pathname
-                                             :protocol :stream
-                                             :errorp errorp)))
+  (let ((socket-fd (connect-to-unix-path pathname
+                                         :protocol :stream
+                                         :errorp errorp)))
     (if socket-fd
       (make-instance 'comm:socket-stream
                      :socket socket-fd
@@ -173,7 +185,7 @@
 
 (defvar *unix-message-send-lock* (mp:make-lock))
 
-(defmethod send-message ((socket unix-datagram) buffer &key (length (length buffer)) pathname)
+(defmethod send-message ((socket unix-datagram) buffer &key (length (length buffer)) path)
   "Send message to a socket, using send()/sendto()"
   (declare (type sequence buffer))
   (let ((message *unix-message-send-buffer*)
@@ -186,9 +198,9 @@
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
         (mp:with-lock (*unix-message-send-lock*)
           (replace message buffer :end2 length)
-          (if pathname
+          (if path
             (progn
-              (initialize-sockaddr_in client-addr *socket_af_unix* pathname)
+              (initialize-sockaddr_in client-addr *socket_af_unix* path)
               (%sendto socket-fd ptr (min length +max-udp-message-size+) 0
                        (fli:copy-pointer client-addr :type '(:struct sockaddr))
                        (fli:dereference len)))
@@ -208,7 +220,7 @@
    This function will return 4 values:
    1. receive buffer
    2. number of receive bytes
-   3. remote pathname"
+   3. peer pathname"
   (declare (type socket-datagram socket)
            (type sequence buffer))
   (let ((message *unix-message-receive-buffer*)
