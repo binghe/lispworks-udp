@@ -34,7 +34,7 @@
   `(let ((,socket (open-udp-socket ,@options)))
      (unwind-protect
          (progn ,@body)
-       (close-udp-socket ,socket))))
+       (close-datagram ,socket))))
 
 (defvar *message-send-buffer*
   (make-array +max-udp-message-size+
@@ -145,7 +145,7 @@
             socket
             ;; fail, close socket and return nil
             (progn
-              (close-udp-socket socket)
+              (close-datagram socket)
               (when errorp
                 (error 'socket-error
                        :format-string "cannot connect"))))))
@@ -157,7 +157,7 @@
   `(let ((,socket (connect-to-udp-server ,@options)))
      (unwind-protect
          (progn ,@body)
-       (close-udp-socket ,socket))))
+       (close-datagram ,socket))))
 
 (defun open-udp-stream (hostname service &key (direction :io)
                                  (element-type 'base-char)
