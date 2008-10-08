@@ -29,64 +29,128 @@
   (sun_path   (:c-array (:unsigned :byte) #.+max-unix-path-length+)))
 
 (defun initialize-sockaddr_un (unaddr family path)
-  (declare (type fli::pointer unaddr)
+  (declare (type (satisfies fli:pointerp) unaddr)
            (type integer family)
            (type string path))
-  (let* ((code (ef:encode-lisp-string path :utf-8))
-         (len (length code)))
-    (fli:fill-foreign-object unaddr
-                             :nelems (fli:size-of '(:struct sockaddr_un))
-                             :byte 0)
-    (setf (fli:foreign-slot-value unaddr 'sun_family) family)
-    (fli:replace-foreign-array (fli:foreign-slot-pointer unaddr 'sun_path)
-                               code
-                               :start1 0 :end1 (min len +max-unix-path-length+))
-    (setf (fli:foreign-aref (fli:foreign-slot-pointer unaddr 'sun_path)
-                            (min len (1- +max-unix-path-length+)))
-          0)))
+    (fli:fill-foreign-object unaddr :byte 0)
+    (let* ((code (ef:encode-lisp-string path :utf-8))
+           (len (length code)))
+      (fli:with-foreign-slots (sun_len sun_family) unaddr
+        (setf sun_len (+ len 2)
+              sun_family family))
+      (fli:replace-foreign-array (fli:foreign-slot-pointer unaddr 'sun_path)
+                                 code
+                                 :start1 0 :end1 (min len +max-unix-path-length+))
+      (setf (fli:foreign-aref (fli:foreign-slot-pointer unaddr 'sun_path)
+                              (min len (1- +max-unix-path-length+)))
+            0)
+      code))
 
-(defun get-socket-peer-path (socket-fd)
+(defun get-socket-peer-pathname (socket-fd)
   (declare (type integer socket-fd))
   (fli:with-dynamic-foreign-objects ((sock-addr (:struct sockaddr_un))
                                      (len :int
                                           #-(or lispworks3 lispworks4 lispworks5.0)
                                           :initial-element
                                           (fli:size-of '(:struct sockaddr_un))))
-    (getpeername socket-fd (fli:copy-pointer sock-addr :type '(:struct sockaddr)) len)
-    (let ((code (make-array (- (fli:dereference len) 2)
-                            :element-type '(unsigned-byte 8)
-                            :initial-element 0)))
-      (fli:replace-foreign-array code (fli:foreign-slot-value sock-addr 'sun_path))
-      (ef:decode-external-string code :utf-8))))
+    (fli:fill-foreign-object sock-addr :byte 0)
+    (let ((return-code
+           (getpeername socket-fd (fli:copy-pointer sock-addr :type '(:struct sockaddr)) len)))
+      (when (zerop return-code)
+        (fli:convert-from-foreign-string (fli:foreign-slot-pointer sock-addr 'sun_path)
+                                         :external-format :utf-8
+                                         :null-terminated-p t
+                                         :allow-null t)))))
 
-(defun connect-to-unix-domain-socket (path &key (errorp nil))
-  "Something like CONNECT-TO-TCP-SERVER"
+(defun get-socket-pathname (socket-fd)
+  (declare (type integer socket-fd))
+  (fli:with-dynamic-foreign-objects ((sock-addr (:struct sockaddr_un))
+                                     (len :int
+                                          #-(or lispworks3 lispworks4 lispworks5.0)
+                                          :initial-element
+                                          (fli:size-of '(:struct sockaddr_un))))
+    (fli:fill-foreign-object sock-addr :byte 0)
+    (let ((return-code
+           (getsockname socket-fd (fli:copy-pointer sock-addr :type '(:struct sockaddr)) len)))
+      (when (zerop return-code)
+        (fli:convert-from-foreign-string (fli:foreign-slot-pointer sock-addr 'sun_path)
+                                         :external-format :utf-8
+                                         :null-terminated-p t
+                                         :allow-null t)))))
+
+(defun open-unix-socket (&key (protocol :datagram)
+                              errorp local-pathname read-timeout)
   (let ((socket-fd (socket *socket_af_unix*
-			   *socket_sock_stream*
+			   (ecase protocol
+                             (:stream *socket_sock_stream*)
+                             (:datagram *socket_sock_dgram*))
 			   *socket_pf_unspec*)))
     (if socket-fd
-      (fli:with-dynamic-foreign-objects ((server-addr (:struct sockaddr_un)))
-        (initialize-sockaddr_un server-addr *socket_af_unix* path)
-        (if (connect socket-fd
-                     (fli:copy-pointer server-addr :type '(:struct sockaddr))
-                     (fli:pointer-element-size server-addr))
-          ;; success
-          socket-fd
-          ;; fail
+      (progn
+        (when read-timeout (set-socket-receive-timeout socket-fd read-timeout))
+        (if local-pathname
           (progn
-            (close-socket socket-fd)
-            (when errorp
-              (error 'socket-error
-                     :format-string "cannot connect")))))
-      (when errorp
-        (error 'socket-error
-               :format-string "cannot create socket")))))
+            (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_un)))
+              (initialize-sockaddr_in client-addr *socket_af_unix*
+                                      (namestring (truename local-pathname)))
+              (if (bind socket-fd
+                        (fli:copy-pointer client-addr :type '(:struct sockaddr))
+                        (fli:pointer-element-size client-addr))
+                ;; success, return socket fd
+                (ecase protocol
+                  (:stream socket-fd)
+                  (:datagram (make-datagram socket-fd)))
+                (progn ;; fail, close socket and return nil
+                  (close-socket socket-fd)
+                  (when errorp
+                    (error 'socket-error
+                           :format-string "cannot bind local pathname"))))))
+          (ecase protocol
+            (:stream socket-fd)
+            (:datagram (make-datagram socket-fd)))))
+      (when errorp (error 'socket-error "cannot create socket")))))
 
-(defun open-unix-stream (path &key (direction :io)
-                              (element-type 'base-char)
-                              errorp read-timeout)
+(defun connect-to-unix-pathname (pathname &key (protocol :datagram)
+                                               errorp read-timeout)
+  "Something like CONNECT-TO-TCP-SERVER"
+  (declare (type (or pathname string) pathname))
+  (let ((socket (open-unix-socket :protocol protocol
+                                  :errorp errorp
+                                  :read-timeout read-timeout)))
+    (if socket
+      (let ((socket-fd (ecase protocol
+                         (:stream socket)
+                         (:datagram (socket-datagram-socket socket)))))
+        (fli:with-dynamic-foreign-objects ((server-addr (:struct sockaddr_un)))
+          (initialize-sockaddr_un server-addr *socket_af_unix*
+                                  (namestring (truename pathname)))
+          (if (connect socket-fd
+                       (fli:copy-pointer server-addr :type '(:struct sockaddr))
+                       (fli:pointer-element-size server-addr))
+            ;; success
+            (ecase protocol
+              (:stream socket-fd)
+              (:datagram socket))
+            ;; fail
+            (progn
+              (ecase protocol
+                (:stream (close-socket socket-fd))
+                (:datagram (close-datagram socket)))
+              (when errorp
+                (error 'socket-error
+                       :format-string "cannot connect")))))
+        (when errorp
+          (error 'socket-error
+                 :format-string "cannot create socket"))))))
+
+(defun open-unix-stream (pathname &key (direction :io)
+                                  (element-type 'base-char)
+                                  errorp read-timeout)
   "Open a UNIX domain socket stream"
-  (let ((socket-fd (connect-to-unix-domain-socket path :errorp errorp)))
+  (declare (type (or pathname string) pathname))
+  (let ((socket-fd (connect-to-unix-pathname pathname
+                                             :protocol :stream
+                                             :errorp errorp)))
     (if socket-fd
       (make-instance 'comm:socket-stream
                      :socket socket-fd

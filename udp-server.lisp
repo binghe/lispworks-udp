@@ -55,7 +55,7 @@
   (declare (type socket-datagram socket)
            (type mp:process process)
            (ignore process))
-  (close-udp-socket socket))
+  (close-datagram socket))
 
 (defun start-udp-server (&key (function #'identity) (arguments nil)
                               (announce nil)
@@ -80,7 +80,7 @@
 (defun stop-udp-server (process &key wait)
   (let ((socket (getf (mp:process-plist process) 'socket)))
     (mp:process-kill process)
-    (prog1 (zerop (close-udp-socket socket))
+    (prog1 (zerop (close-datagram socket))
       (when wait
         (mp:process-wait "Wait until UDP server process be killed"
                          #'(lambda () (not (mp:process-alive-p process))))))))

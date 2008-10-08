@@ -15,7 +15,7 @@
 (defun make-datagram (socket-fd)
   (make-instance 'socket-datagram :socket socket-fd))
 
-(defun close-udp-socket (socket)
+(defun close-datagram (socket)
   (declare (type socket-datagram socket))
   (setf (socket-open-p socket) nil)
   (close-socket (socket-datagram-socket socket)))
@@ -24,7 +24,7 @@
 (defun socket-special-free-action (object)
   (when (and (typep object 'socket-datagram)
              (socket-open-p object))
-    (close-udp-socket object)))
+    (close-datagram object)))
 
 (eval-when (:load-toplevel :execute)
   (hcl:add-special-free-action 'socket-special-free-action))
