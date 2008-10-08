@@ -20,7 +20,7 @@
   "Connectionless, unreliable datagrams of fixed maximum length.")
 
 (defconstant *sockopt_so_rcvtimeo*
-  #+(not linux) #x1006
+  #-linux #x1006
   #+linux 20
   "Socket receive timeout")
 
@@ -38,7 +38,9 @@
      (flags :int)
      (address (:pointer (:struct sockaddr)))
      (address-len (:pointer :int)))
-  :result-type :int)
+  :result-type :int
+  #+win32 :module
+  #+win32 "ws2_32")
 
 ;;; ssize_t
 ;;; sendto(int socket, const void *buffer, size_t length, int flags,
@@ -50,7 +52,9 @@
      (flags :int)
      (address (:pointer (:struct sockaddr)))
      (address-len :int))
-  :result-type :int)
+  :result-type :int
+  #+win32 :module
+  #+win32 "ws2_32")
 
 #-win32
 (defmethod set-socket-receive-timeout ((socket-fd integer) seconds)
