@@ -28,10 +28,11 @@
   (sun_family (:unsigned :byte))
   (sun_path   (:c-array (:unsigned :byte) #.+max-unix-path-length+)))
 
-(defun initialize-sockaddr_un (unaddr family path)
+(defun initialize-sockaddr_un (unaddr family pathname)
   (declare (type (satisfies fli:pointerp) unaddr)
            (type integer family)
-           (type string path))
+           (type (or string pathname) pathname))
+  (let ((path (namestring (translate-logical-pathname pathname))))
     (fli:fill-foreign-object unaddr :byte 0)
     (let* ((code (ef:encode-lisp-string path :utf-8))
            (len (length code)))
@@ -44,7 +45,7 @@
       (setf (fli:foreign-aref (fli:foreign-slot-pointer unaddr 'sun_path)
                               (min len (1- +max-unix-path-length+)))
             0)
-      code))
+      (values))))
 
 (defun get-socket-peer-pathname (socket-fd)
   (declare (type integer socket-fd))
@@ -91,8 +92,9 @@
         (if local-pathname
           (progn
             (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_un)))
-              (initialize-sockaddr_in client-addr *socket_af_unix*
-                                      (namestring (truename local-pathname)))
+              (initialize-sockaddr_un client-addr *socket_af_unix* local-pathname)
+              (ignore-errors
+                (delete-file local-pathname))
               (if (bind socket-fd
                         (fli:copy-pointer client-addr :type '(:struct sockaddr))
                         (fli:pointer-element-size client-addr))
@@ -123,7 +125,7 @@
                          (:datagram (socket-datagram-socket socket)))))
         (fli:with-dynamic-foreign-objects ((server-addr (:struct sockaddr_un)))
           (initialize-sockaddr_un server-addr *socket_af_unix*
-                                  (namestring (truename pathname)))
+                                  (truename pathname))
           (if (connect socket-fd
                        (fli:copy-pointer server-addr :type '(:struct sockaddr))
                        (fli:pointer-element-size server-addr))
@@ -163,3 +165,81 @@
      (unwind-protect
          (progn ,@body)
        (close ,stream))))
+
+(defvar *unix-message-send-buffer*
+  (make-array +max-udp-message-size+
+              :element-type '(unsigned-byte 8)
+              :allocation :static))
+
+(defvar *unix-message-send-lock* (mp:make-lock))
+
+(defmethod send-message ((socket unix-datagram) buffer &key (length (length buffer)) pathname)
+  "Send message to a socket, using send()/sendto()"
+  (declare (type sequence buffer))
+  (let ((message *unix-message-send-buffer*)
+        (socket-fd (socket-datagram-socket socket)))
+    (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_un))
+                                       (len :int
+					    #-(or lispworks3 lispworks4 lispworks5.0)
+                                            :initial-element
+                                            (fli:size-of '(:struct sockaddr_un))))
+      (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
+        (mp:with-lock (*unix-message-send-lock*)
+          (replace message buffer :end2 length)
+          (if pathname
+            (progn
+              (initialize-sockaddr_in client-addr *socket_af_unix* pathname)
+              (%sendto socket-fd ptr (min length +max-udp-message-size+) 0
+                       (fli:copy-pointer client-addr :type '(:struct sockaddr))
+                       (fli:dereference len)))
+            (%send socket-fd ptr (min length +max-udp-message-size+) 0)))))))
+
+(defvar *unix-message-receive-buffer*
+  (make-array +max-udp-message-size+
+              :element-type '(unsigned-byte 8)
+              :allocation :static))
+
+(defvar *unix-message-receive-lock* (mp:make-lock))
+
+(defmethod receive-message ((socket unix-datagram) &key buffer (length (length buffer))
+                            read-timeout (max-buffer-size +max-udp-message-size+))
+  "Receive message from socket, read-timeout is a float number in seconds.
+
+   This function will return 4 values:
+   1. receive buffer
+   2. number of receive bytes
+   3. remote pathname"
+  (declare (type socket-datagram socket)
+           (type sequence buffer))
+  (let ((message *unix-message-receive-buffer*)
+        (socket-fd (socket-datagram-socket socket))
+        old-timeout)
+    (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_un))
+                                       (len :int
+					    #-(or lispworks3 lispworks4 lispworks5.0)
+                                            :initial-element
+                                            (fli:size-of '(:struct sockaddr_un))))
+      (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
+        ;; setup new read timeout
+        (when read-timeout
+          (setf old-timeout (get-socket-receive-timeout socket-fd))
+          (set-socket-receive-timeout socket-fd read-timeout))
+        (mp:with-lock (*unix-message-receive-lock*)
+          (let ((n (%recvfrom socket-fd ptr max-buffer-size 0
+                              (fli:copy-pointer client-addr :type '(:struct sockaddr))
+                              len)))
+            ;; restore old read timeout
+            (when (and read-timeout (/= old-timeout read-timeout))
+              (set-socket-receive-timeout socket-fd old-timeout))
+            (if (plusp n)
+                (values (if buffer
+                            (replace buffer message
+                                     :end1 (min length max-buffer-size)
+                                     :end2 (min n max-buffer-size))
+                            (subseq message 0 (min n max-buffer-size)))
+                        (min n max-buffer-size)
+                        (fli:convert-from-foreign-string (fli:foreign-slot-pointer client-addr 'sun_path)
+                                                         :external-format :utf-8
+                                                         :null-terminated-p t
+                                                         :allow-null t))
+                (values nil n ""))))))))
