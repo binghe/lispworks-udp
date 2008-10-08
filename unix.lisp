@@ -19,26 +19,83 @@
 
 (in-package :comm+)
 
-(defun connect-to-unix-domain-socket (source &key (errorp nil))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defconstant +max-unix-path-length+ 104))
+
+;; (fli:size-of '(:struct sockaddr_un)) = 106
+(fli:define-c-struct sockaddr_un
+  (sun_len    (:unsigned :byte))
+  (sun_family (:unsigned :byte))
+  (sun_path   (:c-array (:unsigned :byte) #.+max-unix-path-length+)))
+
+(defun initialize-sockaddr_un (unaddr family path)
+  (declare (type fli::pointer unaddr)
+           (type integer family)
+           (type string path))
+  (let* ((code (ef:encode-lisp-string path :utf-8))
+         (len (length code)))
+    (fli:fill-foreign-object unaddr
+                             :nelems (fli:size-of '(:struct sockaddr_un))
+                             :byte 0)
+    (setf (fli:foreign-slot-value unaddr 'sun_family) family)
+    (fli:replace-foreign-array (fli:foreign-slot-pointer unaddr 'sun_path)
+                               code
+                               :start1 0 :end1 (min len +max-unix-path-length+))
+    (setf (fli:foreign-aref (fli:foreign-slot-pointer unaddr 'sun_path)
+                            (min len (1- +max-unix-path-length+)))
+          0)))
+
+(defun get-socket-peer-path (socket-fd)
+  (declare (type integer socket-fd))
+  (fli:with-dynamic-foreign-objects ((sock-addr (:struct sockaddr_un))
+                                     (len :int
+                                          #-(or lispworks3 lispworks4 lispworks5.0)
+                                          :initial-element
+                                          (fli:size-of '(:struct sockaddr_un))))
+    (getpeername socket-fd (fli:copy-pointer sock-addr :type '(:struct sockaddr)) len)
+    (let ((code (make-array (- (fli:dereference len) 2)
+                            :element-type '(unsigned-byte 8)
+                            :initial-element 0)))
+      (fli:replace-foreign-array code (fli:foreign-slot-value sock-addr 'sun_path))
+      (ef:decode-external-string code :utf-8))))
+
+(defun connect-to-unix-domain-socket (path &key (errorp nil))
   "Something like CONNECT-TO-TCP-SERVER"
   (let ((socket-fd (socket *socket_af_unix*
 			   *socket_sock_stream*
 			   *socket_pf_unspec*)))
     (if socket-fd
-      nil
-      (if errorp (error "Cannot create UNIX domain socket") nil))))
+      (fli:with-dynamic-foreign-objects ((server-addr (:struct sockaddr_un)))
+        (initialize-sockaddr_un server-addr *socket_af_unix* path)
+        (if (connect socket-fd
+                     (fli:copy-pointer server-addr :type '(:struct sockaddr))
+                     (fli:pointer-element-size server-addr))
+          ;; success
+          socket-fd
+          ;; fail
+          (progn
+            (close-socket socket-fd)
+            (when errorp
+              (error 'socket-error
+                     :format-string "cannot connect")))))
+      (when errorp
+        (error 'socket-error
+               :format-string "cannot create socket")))))
 
-(defun open-unix-domain-stream (source &key
-                                       (direction :io)
-                                       (element-type 'base-char)
-                                       (errorp nil)
-                                       timeout)
-  (let ((socket (connect-to-unix-domain-socket source :errorp errorp)))
-    (if (= socket -1)
-      (if errorp
-        (error "Failed to create unix domain socket ~S" source)
-        nil)
+(defun open-unix-stream (path &key (direction :io)
+                              (element-type 'base-char)
+                              errorp read-timeout)
+  "Open a UNIX domain socket stream"
+  (let ((socket-fd (connect-to-unix-domain-socket path :errorp errorp)))
+    (if socket-fd
       (make-instance 'comm:socket-stream
-                     :socket socket
+                     :socket socket-fd
                      :element-type element-type
-                     :direction direction))))
+                     :direction direction
+                     :read-timeout read-timeout))))
+
+(defmacro with-unix-stream ((stream &rest options) &body body)
+  `(let ((,stream (open-unix-stream ,@options)))
+     (unwind-protect
+         (progn ,@body)
+       (close ,stream))))

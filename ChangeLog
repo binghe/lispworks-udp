@@ -30,4 +30,6 @@ API Changes between 2.x and 3.x:
 
 API Changes between 3.x and 4.x:
 
+* (4.0) Change from COMM package to COMM+ package!!! (all external symbols of COMM is also exported)
+
 * (4.0) new funcion CLOSE-UDP-SOCKET instead of CLOSE-SOCKET
