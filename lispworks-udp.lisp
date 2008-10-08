@@ -1,11 +1,7 @@
 ;;;; -*- Mode: Lisp -*-
 ;;;; $Id$
-;;;; UDP Support for LispWorks as a COMM package extension
 
 (in-package :comm+)
-
-#+win32
-(fli:register-module "ws2_32")
 
 #+win32
 (eval-when (:load-toplevel :execute)
@@ -38,9 +34,7 @@
      (flags :int)
      (address (:pointer (:struct sockaddr)))
      (address-len (:pointer :int)))
-  :result-type :int
-  #+win32 :module
-  #+win32 "ws2_32")
+  :result-type :int)
 
 ;;; ssize_t
 ;;; sendto(int socket, const void *buffer, size_t length, int flags,
@@ -52,15 +46,12 @@
      (flags :int)
      (address (:pointer (:struct sockaddr)))
      (address-len :int))
-  :result-type :int
-  #+win32 :module
-  #+win32 "ws2_32")
+  :result-type :int)
 
 #-win32
-(defmethod set-socket-receive-timeout ((socket-fd integer) seconds)
+(defmethod (setf socket-receive-timeout) (seconds (socket-fd integer))
   "Set socket option: RCVTIMEO, argument seconds can be a float number"
-  (declare (type integer socket-fd)
-           (type number seconds))
+  (declare (type number seconds))
   (multiple-value-bind (sec usec) (truncate seconds)
     (fli:with-dynamic-foreign-objects ((timeout (:struct timeval)))
       (fli:with-foreign-slots (tv-sec tv-usec) timeout
@@ -75,11 +66,10 @@
             seconds)))))
 
 #+win32
-(defmethod set-socket-receive-timeout ((socket-fd integer) seconds)
+(defmethod (setf socket-receive-timeout) (seconds (socket-fd integer))
   "Set socket option: RCVTIMEO, argument seconds can be a float number.
    On win32, you must bind the socket before use this function."
-  (declare (type integer socket-fd)
-           (type number seconds))
+  (declare (type number seconds))
   (fli:with-dynamic-foreign-objects ((timeout :int))
     (setf (fli:dereference timeout)
           (truncate (* 1000 seconds)))
@@ -92,7 +82,7 @@
         seconds)))
 
 #-win32
-(defmethod get-socket-receive-timeout ((socket-fd integer))
+(defmethod socket-receive-timeout ((socket-fd integer))
   "Get socket option: RCVTIMEO, return value is a float number"
   (declare (type integer socket-fd))
   (fli:with-dynamic-foreign-objects ((timeout (:struct timeval))
@@ -107,7 +97,7 @@
       (float (+ tv-sec (/ tv-usec 1000000))))))
 
 #+win32
-(defmethod get-socket-receive-timeout ((socket-fd integer))
+(defmethod socket-receive-timeout ((socket-fd integer))
   "Get socket option: RCVTIMEO, return value is a float number"
   (declare (type integer socket-fd))
   (fli:with-dynamic-foreign-objects ((timeout :int)
@@ -119,9 +109,3 @@
                                   :type '(:pointer :void))
                 len)
     (float (/ (fli:dereference timeout) 1000))))
-
-#+win32
-(fli:define-foreign-function (wsa-get-last-error "WSAGetLastError" :source)
-    ()
-  :result-type :int
-  :module "ws2_32")

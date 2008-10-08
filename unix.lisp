@@ -87,7 +87,8 @@
 			   *socket_pf_unspec*)))
     (if socket-fd
       (progn
-        (when read-timeout (set-socket-receive-timeout socket-fd read-timeout))
+        (when read-timeout
+          (setf (socket-receive-timeout socket-fd) read-timeout))
         (if path
           (progn
             (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_un)))
@@ -224,8 +225,7 @@
   (declare (type socket-datagram socket)
            (type sequence buffer))
   (let ((message *unix-message-receive-buffer*)
-        (socket-fd (socket-datagram-socket socket))
-        old-timeout)
+        (socket-fd (socket-datagram-socket socket)))
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_un))
                                        (len :int
 					    #-(or lispworks3 lispworks4 lispworks5.0)
@@ -234,15 +234,11 @@
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
         ;; setup new read timeout
         (when read-timeout
-          (setf old-timeout (get-socket-receive-timeout socket-fd))
-          (set-socket-receive-timeout socket-fd read-timeout))
+          (setf (socket-receive-timeout socket-fd) read-timeout))
         (mp:with-lock (*unix-message-receive-lock*)
           (let ((n (%recvfrom socket-fd ptr max-buffer-size 0
                               (fli:copy-pointer client-addr :type '(:struct sockaddr))
                               len)))
-            ;; restore old read timeout
-            (when (and read-timeout (/= old-timeout read-timeout))
-              (set-socket-receive-timeout socket-fd old-timeout))
             (if (plusp n)
                 (values (if buffer
                             (replace buffer message

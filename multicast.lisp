@@ -5,6 +5,8 @@
 
 (in-package :comm+)
 
+(defconstant *sockopt_ipproto_ip* 0 "Dummy protocol")
+
 (defconstant *sockopt_ip_multicast_if*
   #-linux  9 #+linux 32
   "specify default interface for outgoing multicasts")
@@ -29,3 +31,29 @@
 (fli:define-c-struct ip_mreq
   (imr_multiaddr (:struct in_addr))
   (imr_interface (:struct in_addr)))
+
+(defclass mcast-datagram (inet-datagram)
+  ())
+
+(defmethod mcast-join ((socket mcast-datagram) address)
+  )
+
+(defmethod mcast-leave ((socket mcast-datagram) address)
+  )
+
+(defmethod mcast-if ((socket mcast-datagram)))
+
+(defmethod mcast-loop ((socket mcast-datagram))
+  )
+
+(defmethod mcast-ttl ((socket mcast-datagram))
+  )
+
+(defmethod (setf mcast-ttl) (ttl (socket mcast-datagram))
+  )
+
+(defmethod (setf mcast-if) (interface (socket mcast-datagram))
+  )
+
+(defmethod (setf mcast-loop) (flag (socket mcast-datagram))
+  )
