@@ -1,7 +1,7 @@
 API Reference of LispWorks-UDP 4
 
 ______________________
-| COMM:OPEN-UDP-STREAM						[Function]
+| COMM+:OPEN-UDP-STREAM						[Function]
 
 Summary
 
@@ -51,7 +51,7 @@ See also
   COMM:OPEN-TCP-STREAM
 
 ______________________
-| COMM:WITH-UDP-STREAM						[Macro]
+| COMM+:WITH-UDP-STREAM						[Macro]
 
 Signature
 
@@ -75,10 +75,10 @@ Description
   of THROW), the STREAM and the socket are automatically closed.
 
 See also
-  COMM:OPEN-UDP-STREAM
+  COMM+:OPEN-UDP-STREAM
 
 ____________________________
-| COMM:CONNECT-TO-UDP-SERVER					[Function]
+| COMM+:CONNECT-TO-UDP-SERVER					[Function]
 
 Summary
 
@@ -117,10 +117,10 @@ Description
 
 See also
 
-  COMM:OPEN-UDP-STREAM, COMM:SEND-MESSAGE, COMM:RECEIVE-MESSAGE
+  COMM+:OPEN-UDP-STREAM, COMM+:SEND-MESSAGE, COMM+:RECEIVE-MESSAGE
 
 ________________________________
-| COMM:WITH-CONNECTED-UDP-SOCKET				[Macro]
+| COMM+:WITH-CONNECTED-UDP-SOCKET				[Macro]
 
 Signature
 
@@ -146,10 +146,10 @@ Description
 
 See also
 
-  COMM:CONNECT-TO-UDP-SERVER
+  COMM+:CONNECT-TO-UDP-SERVER
 
 ______________________
-| COMM:OPEN-UDP-SOCKET						[Function]
+| COMM+:OPEN-UDP-SOCKET						[Function]
 
 Summary
 
@@ -187,10 +187,10 @@ Description
 
 See also
 
-  COMM:SEND-MESSAGE, COMM:RECEIVE-MESSAGE
+  COMM+:SEND-MESSAGE, COMM+:RECEIVE-MESSAGE
 
 ______________________
-| COMM:WITH-UDP-SOCKET						[Macro]
+| COMM+:WITH-UDP-SOCKET						[Macro]
 
 Signature
 
@@ -215,10 +215,10 @@ Description
 
 See also
 
-  COMM:OPEN-UDP-SOCKET
+  COMM+:OPEN-UDP-SOCKET
 
 ___________________
-| COMM:SEND-MESSAGE						[Function]
+| COMM+:SEND-MESSAGE						[Function]
 
 Summary
 
@@ -262,10 +262,10 @@ Description
   
 See also
 
-  COMM:OPEN-UDP-SOCKET, COMM:CONNECT-TO-UDP-SOCKET, COMM:RECEIVE-MESSAGE
+  COMM+:OPEN-UDP-SOCKET, COMM+:CONNECT-TO-UDP-SOCKET, COMM+:RECEIVE-MESSAGE
 
 ______________________
-| COMM:RECEIVE-MESSAGE						[Function]
+| COMM+:RECEIVE-MESSAGE						[Function]
 
 Summary
 
@@ -318,14 +318,15 @@ Description
 
 See also
 
-  COMM:OPEN-UDP-SOCKET, COMM:CONNECT-TO-UDP-SOCKET, COMM:SEND-MESSAGE
+  COMM+:OPEN-UDP-SOCKET, COMM+:CONNECT-TO-UDP-SOCKET, COMM+:SEND-MESSAGE
 
 ________________________________
-| COMM:GET-SOCKET-RECEIVE-TIMEOUT				[Function]
+| COMM+:SOCKET-RECEIVE-TIMEOUT				[Function]
 
 Signature
 
-  get-socket-receive-timeout socket => timeout
+  socket-receive-timeout socket => timeout
+  (setf socket-receive-timeout) timeout => timeout
 
 Arguments and Values
 
@@ -338,38 +339,11 @@ Description
 
   The TIMEOUT argument is in seconds.
 
-See also
-
-  COMM:SET-SOCKET-RECEIVE-TIMEOUT
-
-_________________________________
-| COMM:SET-SOCKET-RECEIVE-TIMEOUT				[Function]
-
-Signature
-
-  set-socket-receive-timeout socket timeout => timeout
-
-Arguments and Values
-
-  socket
-		A fixnum.
-  timeout
-		A fixnum or float number.
-
-Description
-
-  Set RCVTIMEO option for a socket. If successful, the timeout argument will
-  be returned, or NIL.
-
   Note: On Win32, RCVTIMEO won't work until you have calld bind() on the socket,
         this can be done by set LOCAL-PORT to 0 (zero) when creating a socket.
 
-See also
-
-  COMM:GET-SOCET-RECEIVE-TIMEOUT
-
 _______________________
-| COMM:START-UDP-SERVER						[Function]
+| COMM+:START-UDP-SERVER						[Function]
 
 Summary
 
@@ -426,10 +400,10 @@ Description
  port.
 
 See also
-  COMM:STOP-UDP-SERVER
+  COMM+:STOP-UDP-SERVER
 
 ______________________
-| COMM:STOP-UDP-SERVER						[Function]
+| COMM+:STOP-UDP-SERVER						[Function]
 
 Summary
 
@@ -454,10 +428,10 @@ Description
 
 See also
 
-  COMM:START-UDP-SERVER
+  COMM+:START-UDP-SERVER
 
 ______________________
-| COMM:SYNC-MESSAGE						[Function]
+| COMM+:SYNC-MESSAGE						[Function]
 
 Summary
 
@@ -499,10 +473,10 @@ Description
 
 See also
 
-  COMM:SEND-MESSAGE, COMM:RECEIVE-MESSAGE
+  COMM+:SEND-MESSAGE, COMM+:RECEIVE-MESSAGE
 
 ______________________
-| COMM:OPEN-UNIX-STREAM						[Function]
+| COMM+:OPEN-UNIX-STREAM						[Function]
 
 Summary
 
@@ -544,7 +518,7 @@ See also
   COMM:OPEN-TCP-STREAM
 
 ____________________________
-| COMM:CONNECT-TO-UNIX-PATH					[Function]
+| COMM+:CONNECT-TO-UNIX-PATH					[Function]
 
 Summary
 
@@ -575,5 +549,26 @@ Description
 
 See also
 
-  COMM:OPEN-UNIX-STREAM, COMM:SEND-MESSAGE, COMM:RECEIVE-MESSAGE
+  COMM+:OPEN-UNIX-STREAM, COMM+:SEND-MESSAGE, COMM+:RECEIVE-MESSAGE
 
+________________________________
+| COMM+:CLOSE-DATAGRAM						[Function]
+
+Signature
+
+  close-datagram socket
+
+Arguments
+
+  socket
+		A socket-datagram instance
+
+Description
+
+  Close a datagram socket.
+
+  For UNIX domain socket, CLOSE-DATAGRAM also delete the file with socket bind.
+
+See also
+
+  COMM+:OPEN-UDP-SOCKET, COMM+:OPEN-UNIX-SOCKET

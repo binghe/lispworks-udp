@@ -47,11 +47,15 @@
 (eval-when (:load-toplevel :execute)
   (hcl:add-special-free-action 'socket-special-free-action))
 
-(defmethod get-socket-receive-timeout ((socket socket-datagram))
-  (get-socket-receive-timeout (socket-datagram-socket socket)))
+(defgeneric socket-receive-timeout (socket))
+(defgeneric (setf socket-receive-timeout) (seconds socket))
 
-(defmethod set-socket-receive-timeout ((socket socket-datagram) seconds)
-  (set-socket-receive-timeout (socket-datagram-socket socket) seconds))
+(defmethod socket-receive-timeout ((socket socket-datagram))
+  (socket-receive-timeout (socket-datagram-socket socket)))
+
+(defmethod (setf socket-receive-timeout) (seconds (socket socket-datagram))
+  (setf (socket-receive-timeout (socket-datagram-socket socket))
+        seconds))
 
 (defgeneric send-message (socket buffer &key))
 

@@ -44,3 +44,5 @@ API Changes between 3.x and 4.x:
 * [API Change] RECEIVE-MESSAGE's 3rd return value (remote-address) is a 32bit integer now,
   If you want to string-like IPv4 address, call COMM:IP-ADDRESS-STRING yourself.
 
+* [API Change] SET-SOCKET-RECEIVE-TIMEOUT and GET-SOCKET-RECEIVE-TIMEOUT change name to
+               SOCKET-RECEIVE-TIMEOUT and (SETF SOCKET-RECEIVE-TIMEOUT)

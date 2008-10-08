@@ -25,8 +25,8 @@
                             :length data-length :host host :service service)
               (loop with timeout-p = nil
                     do (progn
-                         (set-socket-receive-timeout socket-fd (rtt-start socket))
-                         (setf timeout-p nil)
+                         (setf (socket-receive-timeout socket-fd) (rtt-start socket)
+                               timeout-p nil)
                          (let ((m (receive-message socket
                                                    :max-buffer-size max-receive-length)))
                            (if m ; got a receive message

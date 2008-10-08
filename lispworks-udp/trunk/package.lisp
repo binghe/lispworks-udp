@@ -11,6 +11,7 @@
     #:*socket_pf_unspec*
     #:*socket_sock_stream*
     #:*sockopt_sol_socket*
+    #:*sockopt_so_reuseaddr*
     #:%send
     #:announce-server-started
     #:bind
@@ -30,7 +31,10 @@
     #:sockaddr
     #:sockaddr_in
     #:socket
-    #+win32 #:ensure-sockets)
+    #+win32 #:ensure-sockets
+    #+win32 #:wsa-get-last-error
+    #+win32 #:wsa-event-select
+    #+win32 #:wsa-cleanup)
   (:export
     #:*client-address*
     #:*client-port*
@@ -42,17 +46,17 @@
     #:connect-to-unix-path
     #:get-socket-pathname
     #:get-socket-peer-pathname
-    #:get-socket-receive-timeout
     #:inet-datagram ; class
-    #:send-message
-    #:socket-datagram ; class
-    #:socket-datagram-socket
+    #:mcast-datagran ; class
     #:open-udp-socket
     #:open-udp-stream
     #:open-unix-socket
     #:open-unix-stream
     #:receive-message
-    #:set-socket-receive-timeout
+    #:send-message
+    #:socket-datagram ; class
+    #:socket-datagram-socket
+    #:socket-receive-timeout
     #:start-udp-server
     #:stop-udp-server
     #:sync-message
