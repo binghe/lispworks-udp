@@ -35,8 +35,10 @@
 (defclass mcast-datagram (inet-datagram)
   ())
 
-(defmethod mcast-join ((socket mcast-datagram) address)
-  )
+(defmethod mcast-join ((socket mcast-datagram) address &key if-name if-index)
+  (fli:with-dynamic-foreign-objects ((mreq (:struct ip_mreq))
+                                     (sock-addr (:struct sockaddr_in)))
+    ))
 
 (defmethod mcast-leave ((socket mcast-datagram) address)
   )
@@ -50,10 +52,13 @@
   )
 
 (defmethod (setf mcast-ttl) (ttl (socket mcast-datagram))
-  )
+  ttl)
 
-(defmethod (setf mcast-if) (interface (socket mcast-datagram))
-  )
+(defmethod (setf mcast-if) ((interface integer) (socket mcast-datagram))
+  interface)
+
+(defmethod (setf mcast-if) ((interface string) (socket mcast-datagram))
+  interface)
 
 (defmethod (setf mcast-loop) (flag (socket mcast-datagram))
-  )
+  flag)
