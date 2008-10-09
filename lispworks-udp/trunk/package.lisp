@@ -35,6 +35,8 @@
     #+win32 #:wsa-get-last-error
     #+win32 #:wsa-event-select
     #+win32 #:wsa-cleanup)
+  (:import-from :system
+    #:ioctl)
   (:export
     #:*client-address*
     #:*client-port*
@@ -47,7 +49,7 @@
     #:get-socket-pathname
     #:get-socket-peer-pathname
     #:inet-datagram ; class
-    #:mcast-datagran ; class
+    #:mcast-datagram ; class
     #:open-udp-socket
     #:open-udp-stream
     #:open-unix-socket
