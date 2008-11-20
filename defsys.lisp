@@ -19,7 +19,6 @@
 	    condition
             udp-client
             udp-server
-            rtt-client
-            unix)
+            rtt-client)
   :rules ((:in-order-to :compile :all
            (:requires (:load :previous)))))
