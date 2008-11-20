@@ -20,6 +20,7 @@
                (:file "rtt")
                (:file "lispworks-udp")
                (:file "class")
+               #-mswindows
                (:file "wait-for-input")
 	       (:file "condition")
                (:file "udp-client")
@@ -27,5 +28,7 @@
                (:file "rtt-client")
                (:file "interface")
                (:file "multicast")
-               #+(not mswindows) (:file "unix")
-               #+(not mswindows) (:file "unix-server")))
+               #-mswindows
+               (:file "unix")
+               #-mswindows
+               (:file "unix-server")))

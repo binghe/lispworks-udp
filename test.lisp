@@ -90,6 +90,7 @@
         (format t "Got a condition (~A): ~A~%"
                 (type-of c) c)))))
 
+#-mswindows
 (defun wait-test-1 (&optional (port 10000))
   (let* ((server-process (comm+:start-udp-server :function #'reverse :service port)))
     (unwind-protect
