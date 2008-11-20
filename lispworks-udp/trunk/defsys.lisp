@@ -16,12 +16,15 @@
             rtt
             lispworks-udp
             class
+	    #-mswindows
             wait-for-input
 	    condition
             udp-client
             udp-server
             rtt-client
+	    #-mswindows
             unix
+	    #-mswindows
             unix-server)
   :rules ((:in-order-to :compile :all
            (:requires (:load :previous)))))
