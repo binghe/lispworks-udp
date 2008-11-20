@@ -18,6 +18,7 @@
             udp-client
             udp-server
             rtt-client
-            #+ignore unix)
+            unix
+            unix-server)
   :rules ((:in-order-to :compile :all
            (:requires (:load :previous)))))
