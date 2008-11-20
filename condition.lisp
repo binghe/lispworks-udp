@@ -17,7 +17,7 @@
             :reader new-rto-of
             :initarg :new-rto))
   (:report (lambda (condition stream)
-             (format stream "Receive timeout (~As), next: ~As.~%"
+             (format stream "Receive timeout (~0,1Fs), next: ~0,1Fs.~%"
                      (old-rto-of condition)
                      (new-rto-of condition))))
   (:documentation "RTT timeout warning"))
@@ -30,7 +30,7 @@
              :reader recv-seq-of
              :initarg :recv-seq))
   (:report (lambda (condition stream)
-             (format stream "Sequence number mismatch (~A -> ~A), try read again.~%"
+             (format stream "Sequence number mismatch (~D -> ~D), try read again.~%"
                      (send-seq-of condition)
                      (recv-seq-of condition))))
   (:documentation "RTT sequence mismatch warning"))
@@ -44,6 +44,6 @@
   ()
   (:report (lambda (condition stream)
              (declare (ignore condition))
-             (format stream "Max retransmit times (~A) reached, give up.~%"
+             (format stream "Max retransmit times (~D) reached, give up.~%"
                      *rtt-maxnrexmt*)))
   (:documentation "RTT timeout error"))
