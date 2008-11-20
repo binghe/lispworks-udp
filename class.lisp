@@ -9,7 +9,24 @@
            :initform t)
    (socket :type integer
            :reader socket-datagram-socket
-           :initarg :socket))
+           :initarg :socket)
+   ;;; following slots are taken from USOCKET project
+   (wait-list
+    :initform nil
+    :accessor wait-list
+    :documentation "WAIT-LIST the object is associated with.")
+   (state
+    :initform nil
+    :accessor state
+    :documentation "Per-socket return value for the `wait-for-input' function.
+
+The value stored in this slot can be any of
+ NIL          - not ready
+ :READ        - ready to read
+ :READ-WRITE  - ready to read and write
+ :WRITE       - ready to write
+
+The last two remain unused in the current version."))
   (:documentation "datagram socket class"))
 
 (defclass inet-datagram (socket-datagram rtt-info-mixin)

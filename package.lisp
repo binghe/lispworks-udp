@@ -31,10 +31,11 @@
     #:sockaddr
     #:sockaddr_in
     #:socket
-    #+win32 #:ensure-sockets
-    #+win32 #:wsa-get-last-error
-    #+win32 #:wsa-event-select
-    #+win32 #:wsa-cleanup)
+    #:socket-listen
+    #+mswindows #:ensure-sockets
+    #+mswindows #:wsa-get-last-error
+    #+mswindows #:wsa-event-select
+    #+mswindows #:wsa-cleanup)
   (:import-from :system
     #:ioctl)
   (:export
@@ -63,6 +64,7 @@
     #:stop-udp-server
     #:sync-message
     #:unix-datagram ; class
+    #:wait-for-input
     #:with-connected-udp-socket
     #:with-connected-unix-socket
     #:with-udp-socket

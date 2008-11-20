@@ -9,7 +9,7 @@
            :reader socket-warning-socket
            :initarg :socket)))
 
-(define-condition rtt-timeout-warning (socket-warning)
+(define-condition rtt-timeout-warning (timeout-warning)
   ((old-rto :type short-float
             :reader old-rto-of
             :initarg :old-rto)

@@ -572,3 +572,37 @@ Description
 See also
 
   COMM+:OPEN-UDP-SOCKET, COMM+:OPEN-UNIX-SOCKET
+
+________________________________
+| COMM+:WAIT-FOR-INPUT						[Function]
+
+Signature
+
+  wait-for-input socket-or-sockets :key timeout ready-only => socket-or-sockets, timeout
+
+Arguments
+
+  socket-or-sockets
+		A socket-datagram instance or a list of socket-datagram instance
+  timeout
+		A integer as time in seconds
+  ready-only
+		A boolean
+
+Description
+
+  Wait for input from socket and return the status. WAIT-FOR-INPUT return two values.
+
+  WAIT-FOR-INPUT will wait for TIMEOUT seconds (or forever if TIMEOUT isn't set), when
+  any socket is available to read, the function will return.
+
+  When READY-ONLY is T, only the available sockets will be returned as a list in first
+  return value. When READ-ONLY is NIL, just the argument SOCKET-OR-SOCKETS will be
+  returned.
+
+  Note: Currently the WAIT-FOR-INPUT only support non-win32 platform, and multiprocessing
+  is needed. This function come from the USOCKET Project.
+
+See also
+
+  COMM+:OPEN-UDP-SOCKET
