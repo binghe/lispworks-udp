@@ -89,3 +89,19 @@
       (error (c)
         (format t "Got a condition (~A): ~A~%"
                 (type-of c) c)))))
+
+(defun wait-test-1 (&optional (port 10000))
+  (let* ((server-process (comm+:start-udp-server :function #'reverse :service port)))
+    (unwind-protect
+        (comm+:with-udp-socket (socket)
+          (let ((data #(1 2 3 4 5 6 7 8 9 10)))
+            (comm+:send-message socket data :host "localhost" :service port)
+            (format t "SOCKET: Send message: ~A~%" data)
+
+            ;;; wait the socket until it's available
+            (comm+:wait-for-input socket)
+
+            (let ((echo (multiple-value-list (comm+:receive-message socket
+                                                                    :max-buffer-size 8))))
+              (format t "SOCKET: Recv message: ~A~%" echo))))
+      (comm+:stop-udp-server server-process))))

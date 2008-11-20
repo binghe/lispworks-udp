@@ -3,7 +3,7 @@
 
 (in-package :comm+)
 
-#+win32
+#+mswindows
 (eval-when (:load-toplevel :execute)
   (ensure-sockets))
 
@@ -48,7 +48,7 @@
      (address-len :int))
   :result-type :int)
 
-#-win32
+#-mswindows
 (defmethod (setf socket-receive-timeout) (seconds (socket-fd integer))
   "Set socket option: RCVTIMEO, argument seconds can be a float number"
   (declare (type number seconds))
@@ -65,10 +65,10 @@
                                (fli:size-of '(:struct timeval))))
             seconds)))))
 
-#+win32
+#+mswindows
 (defmethod (setf socket-receive-timeout) (seconds (socket-fd integer))
   "Set socket option: RCVTIMEO, argument seconds can be a float number.
-   On win32, you must bind the socket before use this function."
+   On mswindows, you must bind the socket before use this function."
   (declare (type number seconds))
   (fli:with-dynamic-foreign-objects ((timeout :int))
     (setf (fli:dereference timeout)
@@ -81,7 +81,7 @@
                            (fli:size-of :int)))
         seconds)))
 
-#-win32
+#-mswindows
 (defmethod socket-receive-timeout ((socket-fd integer))
   "Get socket option: RCVTIMEO, return value is a float number"
   (declare (type integer socket-fd))
@@ -96,7 +96,7 @@
     (fli:with-foreign-slots (tv-sec tv-usec) timeout
       (float (+ tv-sec (/ tv-usec 1000000))))))
 
-#+win32
+#+mswindows
 (defmethod socket-receive-timeout ((socket-fd integer))
   "Get socket option: RCVTIMEO, return value is a float number"
   (declare (type integer socket-fd))

@@ -7,6 +7,9 @@
 ;;; Load COMM package
 (require "comm")
 
+#+(and lispworks4 win32)
+(pushnew :mswindows *features*)
+
 (defsystem lispworks-udp
   :description "UDP support for LispWorks"
   :license "MIT"
@@ -24,5 +27,5 @@
                (:file "rtt-client")
                (:file "interface")
                (:file "multicast")
-               #+(not win32) (:file "unix")
-               #+(not win32) (:file "unix-server")))
+               #+(not mswindows) (:file "unix")
+               #+(not mswindows) (:file "unix-server")))

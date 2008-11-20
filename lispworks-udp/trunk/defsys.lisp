@@ -7,6 +7,9 @@
 ;;; Load COMM package
 (require "comm")
 
+#+(and lispworks4 win32)
+(pushnew :mswindows *features*)
+
 (defsystem lispworks-udp
   (:optimize ((safety 3) (debug 3)))
   :members (package
