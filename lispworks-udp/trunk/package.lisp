@@ -37,7 +37,7 @@
     #+mswindows #:wsa-event-select
     #+mswindows #:wsa-cleanup)
   (:import-from :system
-    #:ioctl)
+    #-mswindows #:ioctl)
   (:export
     #:*client-address*
     #:*client-port*
