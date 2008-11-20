@@ -30,7 +30,7 @@ API Changes between 2.x and 3.x:
 
 API Changes between 3.x and 4.x:
 
-* Change from COMM package to COMM+ package!!! (all external symbols of COMM is also exported)
+* Change from COMM package to COMM+ package!!! (all external symbols of COMM is also exported to COMM+)
 
 * Add support for UNIX Domain socket (both stream and datagram, but no server support)
   Related new functions: OPEN-UNIX-STREAM, OPEN-UNIX-SOCKET, CONNECT-TO-UNIX-PATH
