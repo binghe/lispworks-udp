@@ -32,10 +32,6 @@
   (imr_multiaddr (:struct in_addr))
   (imr_interface (:struct in_addr)))
 
-#+ignore
-(defclass mcast-datagram (inet-datagram)
-  ())
-
 (defgeneric mcast-join (socket address &key))
 
 (defmethod mcast-join ((socket inet-datagram) address &key (interface 0) errorp)
@@ -91,10 +87,64 @@
               (raise-socket-error "cannot join to multicast group: ~A" address)
             (values nil (get-last-error)))))))
 
-(defmethod mcast-leave ((socket inet-datagram) address)
-  )
+(defgeneric mcast-leave (socket address &key))
 
-(defmethod mcast-if ((socket inet-datagram)))
+(defmethod mcast-leave ((socket inet-datagram) address &key errorp)
+  "Leave the multicast group (address)"
+  (declare (type (or string integer) address))
+  (fli:with-dynamic-foreign-objects ((mreq (:struct ip_mreq))
+                                     (sock-addr (:struct sockaddr_in)))
+    ;; 1. set multiaddr
+    (initialize-sockaddr_in sock-addr *socket_af_inet* address 0 "udp")
+    (setf (fli:foreign-slot-value
+           (fli:foreign-slot-value mreq 'imr_multiaddr
+                                   :object-type '(:struct ip_mreq)
+                                   :type '(:struct in_addr)
+                                   :copy-foreign-object nil)
+           's_addr
+           :object-type '(:struct in_addr))
+
+          (fli:foreign-slot-value
+           (fli:foreign-slot-value sock-addr 'sin_addr
+                                   :object-type '(:struct sockaddr_in)
+                                   :type '(:struct in_addr)
+                                   :copy-foreign-object nil)
+           's_addr
+           :object-type '(:struct in_addr)))
+
+    ;; 2. set interface to zero (INADDR_ANY)
+    (setf (fli:foreign-slot-value
+           (fli:foreign-slot-value mreq 'imr_interface
+                                   :object-type '(:struct ip_mreq)
+                                   :type '(:struct in_addr)
+                                   :copy-foreign-object nil)
+           's_addr
+           :object-type '(:struct in_addr))
+          0)
+
+    ;; 3. call setsockopt()
+    (let ((reply (setsockopt (socket-datagram-socket socket)
+                             *sockopt_ipproto_ip*
+                             *sockopt_ip_drop_membership*
+                             (fli:copy-pointer mreq :type '(:pointer :char))
+                             (fli:size-of '(:struct ip_mreq)))))
+      (or (zerop reply)
+          (if errorp
+              (raise-socket-error "cannot leave the multicast group: ~A" address)
+            (values nil (get-last-error)))))))
+
+(defmethod mcast-interface ((socket inet-datagram))
+  (fli:with-dynamic-foreign-objects ((in-addr (:struct in_addr))
+                                     (len :int))
+    (let ((reply (getsockopt (socket-datagram-socket socket)
+                             *sockopt_ipproto_ip*
+                             *sockopt_ip_multicast_if*
+                             (fli:copy-pointer in-addr :type '(:pointer :char))
+                             len)))
+      (when (zerop reply)
+        (values (ntohl (fli:foreign-slot-value in-addr 's_addr
+                                               :object-type '(:struct in_addr)))
+                t)))))
 
 (defmethod mcast-loop ((socket inet-datagram))
   (fli:with-dynamic-foreign-objects ((flag (:unsigned :char))
@@ -104,7 +154,8 @@
                              *sockopt_ip_multicast_loop*
                              (fli:copy-pointer flag :type '(:pointer :char))
                              len)))
-      (values (fli:dereference flag) reply))))
+      (when (zerop reply)
+        (values (fli:dereference flag) t)))))
 
 (defmethod mcast-ttl ((socket inet-datagram))
   (fli:with-dynamic-foreign-objects ((ttl (:unsigned :char))
@@ -114,7 +165,8 @@
                              *sockopt_ip_multicast_ttl*
                              (fli:copy-pointer ttl :type '(:pointer :char))
                              len)))
-      (values (fli:dereference ttl) reply))))
+      (when (zerop reply)
+        (values (fli:dereference ttl) t)))))
 
 (defmethod (setf mcast-ttl) ((ttl integer) (socket inet-datagram))
   (declare (type (integer 0) ttl))
@@ -125,13 +177,26 @@
                              *sockopt_ip_multicast_ttl*
                              (fli:copy-pointer %ttl :type '(:pointer :char))
                              (fli:size-of '(:unsigned :char)))))
-      (values ttl reply))))
+      (when (zerop reply)
+        (values ttl t)))))
 
-(defmethod (setf mcast-if) ((interface integer) (socket inet-datagram))
-  interface)
+(defmethod (setf mcast-interface) ((interface string) (socket inet-datagram))
+  (setf (mcast-interface socket)
+        (get-host-entry interface :fields '(:address))))
 
-(defmethod (setf mcast-if) ((interface string) (socket inet-datagram))
-  (setf (mcast-if socket) (string-ip-address interface)))
+(defmethod (setf mcast-interface) ((interface integer) (socket inet-datagram))
+  (declare (type (or string integer) interface))
+  (fli:with-dynamic-foreign-objects ((in-addr (:struct in_addr)))
+    (setf (fli:foreign-slot-value in-addr 's_addr
+                                  :object-type '(:struct in_addr))
+          (htonl interface))
+    (let ((reply (setsockopt (socket-datagram-socket socket)
+                             *sockopt_ipproto_ip*
+                             *sockopt_ip_multicast_if*
+                             (fli:copy-pointer in-addr :type '(:pointer :char))
+                             (fli:size-of '(:struct in_addr)))))
+      (when (zerop reply)
+        (values interface t)))))
 
 (defmethod (setf mcast-loop) (flag (socket inet-datagram))
   (setf (mcast-loop socket) (if flag 1 0)))
@@ -145,4 +210,5 @@
                              *sockopt_ip_multicast_loop*
                              (fli:copy-pointer %flag :type '(:pointer :char))
                              (fli:size-of '(:unsigned :char)))))
-      (values flag reply))))
+      (when (zerop reply)
+        (values flag t)))))
