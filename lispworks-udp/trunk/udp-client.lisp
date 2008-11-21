@@ -4,7 +4,8 @@
 
 (in-package :comm+)
 
-(defun open-udp-socket (&key errorp local-address local-port read-timeout)
+(defun open-udp-socket (&key errorp local-address local-port read-timeout
+                             reuse-address)
   "Open a unconnected UDP socket.
    For binding on address ANY(*), just not set LOCAL-ADDRESS (NIL),
    for binding on random free unused port, set LOCAL-PORT to 0."
@@ -13,6 +14,8 @@
       (progn
         (when read-timeout
           (setf (socket-receive-timeout socket-fd) read-timeout))
+        (when reuse-address
+          (setf (socket-reuse-address socket-fd) reuse-address))
         (if local-port
           (progn ;; bind to local address/port if specified.
             (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_in)))

@@ -52,14 +52,14 @@
 (defun loop-test (&optional (port 3500))
   (labels ((echo-fn (data) data))
     (loop for i from 1 to 10
-          do (let ((server (comm:start-udp-server :function #'echo-fn :service port :loop-time 0.3)))
-               (comm:with-udp-socket (socket :read-timeout 1)
+          do (let ((server (comm+:start-udp-server :function #'echo-fn :service port :loop-time 0.3)))
+               (comm+:with-udp-socket (socket :read-timeout 1)
                  (let ((data #(1 2 3 4 5 6 7 8 9 10)))
-                   (comm:send-message socket data (length data) "localhost" port)
+                   (comm+:send-message socket data (length data) "localhost" port)
                    (format t "SOCKET: Send message: ~A~%" data)
-                   (let ((echo (multiple-value-list (comm:receive-message socket))))
+                   (let ((echo (multiple-value-list (comm+:receive-message socket))))
                      (format t "SOCKET: Recv message: ~A~%" echo))))
-               (princ (comm:stop-udp-server server :wait t))))))
+               (princ (comm+:stop-udp-server server :wait t))))))
 
 (defun rtt-test-1 (&optional (port 10000))
   "RTT test"
@@ -106,3 +106,22 @@
                                                                     :max-buffer-size 8))))
               (format t "SOCKET: Recv message: ~A~%" echo))))
       (comm+:stop-udp-server server-process))))
+
+#-mswindows
+(defun mcast-test-1 (&optional (host "224.0.0.1") (port 10000))
+  "Send one get two"
+  (let* ((echo-fn #'(lambda (data) data))
+         (server-processes (mapcar #'(lambda (x) (comm+:start-udp-server :function echo-fn :service port
+                                                                        :announce t
+                                                                        :address host
+                                                                        :multicast t))
+                                   '(nil nil nil))))
+    (unwind-protect
+        (comm+:with-connected-udp-socket (socket host port :read-timeout 1 :errorp t)
+          (let ((data #(1 2 3 4 5 6 7 8 9 10)))
+            (format t "~A~%" (comm+:send-message socket data))
+            (format t "SOCKET: Send message: ~A~%" data)
+            (dotimes (i 3)
+              (let ((echo (multiple-value-list (comm+:receive-message socket :max-buffer-size 8))))
+                (format t "SOCKET: Recv message: ~A~%" echo)))))
+      (mapcar #'comm+:stop-udp-server server-processes))))
