@@ -84,7 +84,6 @@
 #-mswindows
 (defmethod socket-receive-timeout ((socket-fd integer))
   "Get socket option: RCVTIMEO, return value is a float number"
-  (declare (type integer socket-fd))
   (fli:with-dynamic-foreign-objects ((timeout (:struct timeval))
                                      (len :int))
     (getsockopt socket-fd
@@ -99,7 +98,6 @@
 #+mswindows
 (defmethod socket-receive-timeout ((socket-fd integer))
   "Get socket option: RCVTIMEO, return value is a float number"
-  (declare (type integer socket-fd))
   (fli:with-dynamic-foreign-objects ((timeout :int)
                                      (len :int))
     (getsockopt socket-fd
