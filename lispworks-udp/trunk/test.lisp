@@ -109,7 +109,7 @@
 
 #-mswindows
 (defun mcast-test-1 (&optional (host "224.0.0.1") (port 10000))
-  "Send one get two"
+  "Send one get three"
   (let* ((echo-fn #'(lambda (data) data))
          (server-processes (mapcar #'(lambda (x) (comm+:start-udp-server :function echo-fn :service port
                                                                         :announce t
