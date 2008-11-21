@@ -111,18 +111,15 @@
                         (min n max-buffer-size)
                         (ip-address-string ; translate to string
                          (ntohl (fli:foreign-slot-value
-                                 (fli:foreign-slot-value client-addr
-                                                         'sin_addr
+                                 (fli:foreign-slot-value client-addr 'sin_addr
                                                          :object-type '(:struct sockaddr_in)
                                                          :type '(:struct in_addr)
                                                          :copy-foreign-object nil)
                                  's_addr
                                  :object-type '(:struct in_addr))))
-                        (ntohs (fli:foreign-slot-value client-addr
-                                                       'sin_port
+                        (ntohs (fli:foreign-slot-value client-addr 'sin_port
                                                        :object-type '(:struct sockaddr_in)
-                                                       :type '(:unsigned :short)
-                                                       :copy-foreign-object nil)))
+                                                       :type '(:unsigned :short))))
               (values nil n "" 0))))))))
 
 (defun connect-to-udp-server (hostname service &key errorp
