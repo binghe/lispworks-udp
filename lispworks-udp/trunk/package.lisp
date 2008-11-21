@@ -44,6 +44,8 @@
   (:export
     #:*client-address*
     #:*client-port*
+    #:*major-version*
+    #:*minor-version*
     #:*rtt-maxnrexmt*
     #:*rtt-rxtmax*
     #:*rtt-rxtmin*
@@ -67,6 +69,7 @@
     #:socket-datagram ; class
     #:socket-datagram-socket
     #:socket-receive-timeout
+    #:socker-reuse-address
     #:start-udp-server
     #:stop-udp-server
     #:sync-message
@@ -84,3 +87,6 @@
 (eval-when (:load-toplevel :execute)
   (do-external-symbols (symbol (find-package :comm))
     (export symbol)))
+
+(defparameter *major-version* 4)
+(defparameter *minor-version* 1)

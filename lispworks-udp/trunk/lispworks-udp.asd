@@ -13,7 +13,7 @@
 (defsystem lispworks-udp
   :description "UDP support for LispWorks"
   :license "MIT"
-  :version "4.0"
+  :version "4.1"
   :author "Chun Tian (binghe) <binghe.lisp@gmail.com>"
   :serial t
   :components ((:file "package")
@@ -23,10 +23,10 @@
                #-mswindows
                (:file "wait-for-input")
 	       (:file "condition")
+               (:file "multicast")
                (:file "udp-client")
                (:file "udp-server")
                (:file "rtt-client")
-               (:file "multicast")
                #-mswindows
                (:file "unix")
                #-mswindows

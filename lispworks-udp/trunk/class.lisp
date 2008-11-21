@@ -77,3 +77,40 @@ The last two remain unused in the current version."))
 (defgeneric send-message (socket buffer &key))
 
 (defgeneric receive-message (socket &key))
+
+(defgeneric socket-reuse-address (socket))
+(defgeneric (setf socket-reuse-address) (flag socket))
+
+(defmethod socket-reuse-address ((socket-fd integer))
+  "Get socket option: REUSEADDR, return value is 0 or 1"
+  (fli:with-dynamic-foreign-objects ((flag :int)
+                                     (len :int))
+    (let ((reply (getsockopt socket-fd
+                             *sockopt_sol_socket*
+                             *sockopt_so_reuseaddr*
+                             (fli:copy-pointer flag :type '(:pointer :void))
+                             len)))
+      (when (zerop reply)
+        (values (fli:dereference flag) t)))))
+
+(defmethod socket-reuse-address ((socket inet-datagram))
+  (socket-reuse-address (socket-datagram-socket socket)))
+
+(defmethod (setf socket-reuse-address) (flag (socket-fd integer))
+  "Set socket option: REUSEADDR, argument flag can be a boolean"
+  (setf (socket-reuse-address socket-fd) (if flag 1 0)))
+
+(defmethod (setf socket-reuse-address) ((flag integer) (socket-fd integer))
+  "Set socket option: REUSEADDR, argument flag can be 0 or 1"
+  (fli:with-dynamic-foreign-objects ((%flag :int))
+    (let ((reply (setsockopt socket-fd
+                             *sockopt_sol_socket*
+                             *sockopt_so_reuseaddr*
+                             (fli:copy-pointer %flag :type '(:pointer :void))
+                             (fli:size-of :int))))
+      (when (zerop reply)
+        (values flag t)))))
+
+(defmethod (setf socket-reuse-address) (flag (socket inet-datagram))
+  (setf (socket-reuse-address (socket-datagram-socket socket))
+        flag))

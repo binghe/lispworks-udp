@@ -19,10 +19,10 @@
 	    #-mswindows
             wait-for-input
 	    condition
+            multicast
             udp-client
             udp-server
             rtt-client
-            multicast
 	    #-mswindows
             unix
 	    #-mswindows

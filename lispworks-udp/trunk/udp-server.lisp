@@ -61,7 +61,11 @@
                               address (service 0)
                               (process-name (format nil "~S UDP server" service))
                               (loop-time 1)
-                              (max-buffer-size +max-udp-message-size+))
+                              (max-buffer-size +max-udp-message-size+)
+                              (multicast nil)
+                              (mcast-interface 0)
+                              (mcast-ttl 1 mcast-ttl-p)
+                              (mcast-loop t mcast-loop-p))
   "Something like START-UP-SERVER"
   (let* ((socket (open-udp-socket :local-address address
                                   :local-port service
@@ -69,6 +73,15 @@
                                   :errorp t))
          (socket-fd (socket-datagram-socket socket)))
     (announce-server-started announce socket-fd nil)
+    ;; multicast support (4.1)
+    (when multicast
+      (setf (socket-reuse-address socket-fd) t)
+      (mcast-join socket-fd address :interface mcast-interface)
+      (when mcast-ttl-p
+        (setf (mcast-ttl socket-fd) mcast-ttl))
+      (when mcast-loop-p
+        (setf (mcast-loop socket-fd) mcast-loop)))
+    ;; start a thread
     (let ((process (mp:process-run-function process-name nil
                                             #'udp-server-loop
                                             arguments ; additional arguments for function
