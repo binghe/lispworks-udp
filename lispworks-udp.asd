@@ -26,8 +26,6 @@
                (:file "udp-client")
                (:file "udp-server")
                (:file "rtt-client")
-               #-mswindows
-               (:file "interface")
                (:file "multicast")
                #-mswindows
                (:file "unix")
