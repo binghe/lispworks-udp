@@ -116,8 +116,7 @@
                       (ntohs (fli:foreign-slot-value client-addr
                                                      'sin_port
                                                      :object-type '(:struct sockaddr_in)
-                                                     :type '(:unsigned :short)
-                                                     :copy-foreign-object nil)))
+                                                     :type '(:unsigned :short))))
               (values nil n 0 0))))))))
 
 (defun connect-to-udp-server (hostname service &key errorp
