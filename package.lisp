@@ -69,7 +69,7 @@
     #:socket-datagram ; class
     #:socket-datagram-socket
     #:socket-receive-timeout
-    #:socker-reuse-address
+    #:socket-reuse-address
     #:start-udp-server
     #:stop-udp-server
     #:sync-message
