@@ -352,7 +352,9 @@ Summary
 Signature
 
   start-udp-server &key function announce address service process-name
-                        max-buffer-size => process
+                        max-buffer-size
+			multicast mcast-loop mcast-ttl mcast-interface
+  => process
 
 Arguments and Values
 
@@ -370,6 +372,13 @@ Arguments and Values
 		A fixnum.
   loop-time
 		A float number.
+
+  multicast     A boolean
+  mcast-loop    A boolean
+  mcast-ttl     A integer
+  mcast-interface
+                A string or integer as hostname/address
+
   process
 		A process object of LispWorks MP.
 
@@ -399,8 +408,19 @@ Description
  call (START-UDP-SERVER) will cause the UDP server listening on a free unused
  port.
 
+ Start from LispWorks-UDP 4.1, Multicast UDP server is supported: (non win32)
+
+ When MULTICAST is T, and the ADDRESS is in multicast range (i.e. 224.0.0.1),
+ A multicast server will be started, and the SO_REUSEADDR socket option will be
+ set automatically so that multiple server can started on same port.
+
+ MCAST-LOOP, MCAST-INTERFACE and MCAST-TTL can set the initial property of
+ the multicast socket. Functions with same name can be used to change or query
+ these properties.
+
 See also
-  COMM+:STOP-UDP-SERVER
+  COMM+:STOP-UDP-SERVER,
+  COMM+:MCAST-TTL, COMM+:MCAST-INTERFACE, COMM+:MCAST-LOOP
 
 ______________________
 | COMM+:STOP-UDP-SERVER						[Function]
@@ -606,3 +626,155 @@ Description
 See also
 
   COMM+:OPEN-UDP-SOCKET
+
+________________________________
+| COMM+:SOCKET-REUSE-ADDRESS					[Generic Function]
+
+Signature
+
+  socket-reuse-address socket => result
+  (setf socket-reuse-address) value socket
+
+Arguments
+
+  socket
+		A socket-datagram instance or socket-fd integer
+  value
+		A boolean or integer 0 or 1
+  result
+		A integer 0 or 1
+
+Description
+
+  Set or get the SO_REUSEADDR socket option of a socket.
+  This function is used by START-UDP-SERVER for multicast support.
+
+See also
+
+  COMM+:START-UDP-SERVER
+
+________________________________
+| COMM+:MCAST-JOIN					[Generic Function]
+
+Signature
+
+  mcast-join socket address &key interface errorp
+
+Arguments
+
+  socket
+		A socket-datagram instance or socket-fd integer
+  address, interface
+		A string or integer as IPv4 hostname or address
+  errorp
+		A boolean
+
+Description
+
+  Join a multicast group.
+
+See also
+
+  COMM+:START-UDP-SERVER, COMM+:MCAST-LEAVE
+
+________________________________
+| COMM+:MCAST-LEAVE					[Generic Function]
+
+Signature
+
+  mcast-leave socket address &key errorp
+
+Arguments
+
+  socket
+		A socket-datagram instance or socket-fd integer
+  address
+		A string or integer as IPv4 hostname or address
+  errorp
+		A boolean
+
+Description
+
+  Leave a multicast group. Usually this function is no need to call,
+  because CLOSE-SOCKET will do the leave job automatically.
+
+See also
+
+  COMM+:MCAST-JOIN, COMM+:CLOSE-SOCKET
+
+________________________________
+| COMM+:MCAST-INTERFACE					[Generic Function]
+
+Signature
+
+  mcast-interface socket => result
+  (setf mcast-interface) value socket
+
+Arguments
+
+  socket
+		A socket-datagram instance or socket-fd integer
+  value
+		A string or integer as IPv4 hostname or address
+  result
+		A integer as IPv4 address
+
+Description
+
+  Set and get the IP_MULTICAST_IF socket option of a multicast socket,
+  this option can also be set when MCAST-JOIN being called as a keyword.
+
+See also
+
+  COMM+:MCAST-JOIN
+
+________________________________
+| COMM+:MCAST-LOOP					[Generic Function]
+
+Signature
+
+  mcast-loop socket => result
+  (setf mcast-loop) value socket
+
+Arguments
+
+  socket
+		A socket-datagram instance or socket-fd integer
+  value
+		A boolean or integer 0 or 1
+  result
+		A integer 0 or 1
+
+Description
+
+  Set and get the IP_MULTICAST_LOOP socket option of a multicast socket,
+
+See also
+
+  COMM+:MCAST-JOIN
+
+________________________________
+| COMM+:MCAST-TTL					[Generic Function]
+
+Signature
+
+  mcast-ttl socket => result
+  (setf mcast-ttl) value socket
+
+Arguments
+
+  socket
+		A socket-datagram instance or socket-fd integer
+  value
+		A integer
+  result
+		A integer
+
+Description
+
+  Set and get the IP_MULTICAST_TTL socket option of a multicast socket,
+
+See also
+
+  COMM+:MCAST-JOIN
+
