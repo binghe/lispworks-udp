@@ -30,16 +30,14 @@
                 (when (plusp n)
                   (let ((*client-address*
                          (ntohl (fli:foreign-slot-value
-                                 (fli:foreign-slot-value client-addr
-                                                         'sin_addr
+                                 (fli:foreign-slot-value client-addr 'sin_addr
                                                          :object-type '(:struct sockaddr_in)
                                                          :type '(:struct in_addr)
                                                          :copy-foreign-object nil)
                                  's_addr
                                  :object-type '(:struct in_addr))))
                         (*client-port*
-                         (ntohs (fli:foreign-slot-value client-addr
-                                                        'sin_port
+                         (ntohs (fli:foreign-slot-value client-addr 'sin_port
                                                         :object-type '(:struct sockaddr_in)
                                                         :type '(:unsigned :short)
                                                         :copy-foreign-object nil))))
@@ -49,7 +47,8 @@
                           (replace message reply-message)
                           (%sendto socket-fd ptr length-out 0
                                    (fli:copy-pointer client-addr :type '(:struct sockaddr))
-                                   (fli:dereference len)))))))))))))
+                                   (fli:dereference len)))))))
+                (mp:process-allow-scheduling)))))))
 
 (defun udp-server-loop-cleanup (process socket)
   (declare (type socket-datagram socket)
