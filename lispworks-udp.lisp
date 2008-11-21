@@ -109,3 +109,15 @@
                                   :type '(:pointer :void))
                 len)
     (float (/ (fli:dereference timeout) 1000))))
+
+(defun get-last-error ()
+  #+mswindows
+  (wsa-get-last-error)
+  #-mswindows
+  (errno-value))
+
+(defun raise-socket-error (reason &rest args)
+  (declare (type string reason))
+  (error 'socket-error
+         :format-string (format nil "ERROR ~D: ~A" (get-last-error) reason)
+         :format-arguments args))

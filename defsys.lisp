@@ -22,6 +22,7 @@
             udp-client
             udp-server
             rtt-client
+            multicast
 	    #-mswindows
             unix
 	    #-mswindows
