@@ -70,13 +70,13 @@
   (let* ((socket (open-udp-socket :local-address address
                                   :local-port service
                                   :read-timeout loop-time
-                                  :errorp t))
+                                  :errorp t
+                                  :reuse-address multicast))
          (socket-fd (socket-datagram-socket socket)))
     (announce-server-started announce socket-fd nil)
     ;; multicast support (4.1)
     (when multicast
-      (setf (socket-reuse-address socket-fd) t)
-      (mcast-join socket-fd address :interface mcast-interface)
+      (mcast-join socket-fd address :interface mcast-interface :errorp t)
       (when mcast-ttl-p
         (setf (mcast-ttl socket-fd) mcast-ttl))
       (when mcast-loop-p

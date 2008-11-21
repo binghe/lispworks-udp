@@ -103,6 +103,7 @@ The last two remain unused in the current version."))
 (defmethod (setf socket-reuse-address) ((flag integer) (socket-fd integer))
   "Set socket option: REUSEADDR, argument flag can be 0 or 1"
   (fli:with-dynamic-foreign-objects ((%flag :int))
+    (setf (fli:dereference %flag) flag)
     (let ((reply (setsockopt socket-fd
                              *sockopt_sol_socket*
                              *sockopt_so_reuseaddr*
