@@ -20,6 +20,8 @@
     #:getpeername
     #:getsockname
     #:getsockopt
+    #:htonl
+    #:htons
     #:in_addr
     #:initialize-sockaddr_in
     #:ntohl
@@ -33,6 +35,7 @@
     #:socket
     #:socket-listen
     #+mswindows #:ensure-sockets
+    #+mswindows #:ioctlsocket
     #+mswindows #:wsa-get-last-error
     #+mswindows #:wsa-event-select
     #+mswindows #:wsa-cleanup)
@@ -50,7 +53,11 @@
     #:get-socket-pathname
     #:get-socket-peer-pathname
     #:inet-datagram ; class
-    #:mcast-datagram ; class
+    #:mcast-interface
+    #:mcast-join
+    #:mcast-leave
+    #:mcast-loop
+    #:mcast-ttl
     #:open-udp-socket
     #:open-udp-stream
     #:open-unix-socket
