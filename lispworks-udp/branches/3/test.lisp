@@ -49,13 +49,13 @@
               (format t "SOCKET: Recv message: ~A~%" echo))))
       (comm:stop-udp-server server-process))))
 
-(defun loop-test ()
+(defun loop-test (&optional (port 3500))
   (labels ((echo-fn (data) data))
     (loop for i from 1 to 10
-          do (let ((server (comm:start-udp-server :function #'echo-fn :service 3500 :loop-time 0.3)))
+          do (let ((server (comm:start-udp-server :function #'echo-fn :service port :loop-time 0.3)))
                (comm:with-udp-socket (socket :read-timeout 1)
                  (let ((data #(1 2 3 4 5 6 7 8 9 10)))
-                   (comm:send-message socket data (length data) "localhost" 3500)
+                   (comm:send-message socket data (length data) "localhost" port)
                    (format t "SOCKET: Send message: ~A~%" data)
                    (let ((echo (multiple-value-list (comm:receive-message socket))))
                      (format t "SOCKET: Recv message: ~A~%" echo))))

@@ -48,7 +48,8 @@
                           (replace message reply-message)
                           (%sendto socket-fd ptr length-out 0
                                    (fli:copy-pointer client-addr :type '(:struct sockaddr))
-                                   (fli:dereference len)))))))))))))
+                                   (fli:dereference len)))))))
+                (mp:process-allow-scheduling)))))))
 
 (defun udp-server-loop-cleanup (process socket-fd)
   (declare (ignore process))
