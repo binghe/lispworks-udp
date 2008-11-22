@@ -30,4 +30,6 @@
                #-mswindows
                (:file "unix")
                #-mswindows
-               (:file "unix-server")))
+               (:file "unix-server")
+               #-mswindows
+               (:file "icmp")))

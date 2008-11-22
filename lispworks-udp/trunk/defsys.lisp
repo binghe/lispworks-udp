@@ -26,6 +26,8 @@
 	    #-mswindows
             unix
 	    #-mswindows
-            unix-server)
+            unix-server
+            #-mswindows
+            icmp)
   :rules ((:in-order-to :compile :all
            (:requires (:load :previous)))))

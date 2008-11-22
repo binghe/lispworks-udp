@@ -15,6 +15,8 @@
 (defconstant *socket_sock_dgram* 2
   "Connectionless, unreliable datagrams of fixed maximum length.")
 
+(defconstant *sockopt_ipproto_udp* 17)
+
 (defconstant *sockopt_so_rcvtimeo*
   #-linux #x1006
   #+linux 20
