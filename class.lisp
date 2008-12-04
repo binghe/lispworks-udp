@@ -29,6 +29,10 @@ The value stored in this slot can be any of
 The last two remain unused in the current version."))
   (:documentation "datagram socket class"))
 
+(defmethod initialize-instance :after ((instance socket-datagram)
+                                       &rest initargs &key &allow-other-keys)
+  (hcl:flag-special-free-action instance))
+
 (defclass inet-datagram (socket-datagram rtt-info-mixin)
   ())
 
@@ -102,6 +106,7 @@ The last two remain unused in the current version."))
 
 (defmethod (setf socket-reuse-address) ((flag integer) (socket-fd integer))
   "Set socket option: REUSEADDR, argument flag can be 0 or 1"
+  (declare (type (integer 0 1) flag))
   (fli:with-dynamic-foreign-objects ((%flag :int))
     (setf (fli:dereference %flag) flag)
     (let ((reply (setsockopt socket-fd
