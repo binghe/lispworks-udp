@@ -68,6 +68,9 @@
     #:send-message
     #:socket-datagram ; class
     #:socket-datagram-socket
+    #:socket-header-include ; for icmp
+    #:socket-raw ; class
+    #:socket-raw-socket
     #:socket-receive-timeout
     #:socket-reuse-address
     #:start-udp-server
