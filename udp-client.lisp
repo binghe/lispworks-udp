@@ -4,8 +4,8 @@
 
 (in-package :comm+)
 
-(defun open-udp-socket (&key errorp local-address local-port read-timeout
-                             reuse-address)
+(defun open-udp-socket (&key errorp local-address (local-port #+mswindows 0 #-mswindows nil)
+                             read-timeout reuse-address)
   "Open a unconnected UDP socket.
    For binding on address ANY(*), just not set LOCAL-ADDRESS (NIL),
    for binding on random free unused port, set LOCAL-PORT to 0."
