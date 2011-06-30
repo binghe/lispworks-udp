@@ -9,6 +9,20 @@
   "Open a unconnected UDP socket.
    For binding on address ANY(*), just not set LOCAL-ADDRESS (NIL),
    for binding on random free unused port, set LOCAL-PORT to 0."
+
+  ;; Note: move (ensure-sockets) here to make sure delivered applications
+  ;; correctly have networking support initialized.
+  ;;
+  ;; Following words was from Martin Simmons, forwarded by Camille Troillard:
+
+  ;; Calling comm::ensure-sockets at load time looks like a bug in Lispworks-udp
+  ;; (it is too early and also unnecessary).
+
+  ;; The LispWorks comm package calls comm::ensure-sockets when it is needed, so I
+  ;; think open-udp-socket should probably do it too.  Calling it more than once is
+  ;; safe and it will be very fast after the first time.
+  #+mswindows (ensure-sockets)
+
   (let ((socket-fd (socket *socket_af_inet* *socket_sock_dgram* *socket_pf_unspec*)))
     (if socket-fd
       (progn

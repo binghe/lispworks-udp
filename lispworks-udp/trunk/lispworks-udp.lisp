@@ -3,10 +3,6 @@
 
 (in-package :comm+)
 
-#+mswindows
-(eval-when (:load-toplevel :execute)
-  (ensure-sockets))
-
 (defconstant +max-udp-message-size+ 65536)
 
 ;;;; Below is something we have to define (others already in COMM package)
