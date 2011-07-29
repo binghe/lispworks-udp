@@ -17,12 +17,13 @@
 (in-package :comm+)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defconstant +max-unix-path-length+ 104))
+  (defconstant +max-unix-path-length+ #+darwin 104 #-darwin 108))
 
-;; (fli:size-of '(:struct sockaddr_un)) = 106
+;; (fli:size-of '(:struct sockaddr_un)) = #+darwin 106 #-darwin 110
 (fli:define-c-struct sockaddr_un
+  #+darwin
   (sun_len    (:unsigned :byte))
-  (sun_family (:unsigned :byte))
+  (sun_family (:unsigned #+darwin :byte #-darwin :short))
   (sun_path   (:c-array (:unsigned :byte) #.+max-unix-path-length+)))
 
 (defun initialize-sockaddr_un (unaddr family pathname)
@@ -33,9 +34,10 @@
     (fli:fill-foreign-object unaddr :byte 0)
     (let* ((code (ef:encode-lisp-string path :utf-8))
            (len (length code)))
-      (fli:with-foreign-slots (sun_len sun_family) unaddr
-        (setf sun_len (+ len 2)
-              sun_family family))
+      (fli:with-foreign-slots (#+darwin sun_len sun_family) unaddr
+	#+darwin
+        (setf sun_len (+ len 2))
+        (setf sun_family family))
       (fli:replace-foreign-array (fli:foreign-slot-pointer unaddr 'sun_path)
                                  code
                                  :start1 0 :end1 (min len +max-unix-path-length+))
@@ -147,10 +149,12 @@
                 (:datagram (close-datagram socket)))
               (when errorp
                 (error 'socket-error
-                       :format-string "cannot connect")))))
+                       :format-string "Cannot connect: ~S."
+                       (lw:get-unix-error (lw:errno-value))))))))
         (when errorp
           (error 'socket-error
-                 :format-string "cannot create socket"))))))
+                 :format-string "Cannot create socket: ~S."
+                 (lw:get-unix-error (lw:errno-value)))))))
 
 (defmacro with-connected-unix-socket ((socket &rest options) &body body)
   `(let ((,socket (connect-to-unix-path ,@options)))
