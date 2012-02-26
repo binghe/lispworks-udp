@@ -197,7 +197,7 @@
         (socket-fd (socket-datagram-socket socket)))
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_un))
                                        (len :int
-					    #-(or lispworks3 lispworks4 lispworks5.0)
+                                            #-(or lispworks3 lispworks4 lispworks5.0)
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_un))))
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))
@@ -205,7 +205,7 @@
           (replace message buffer :end2 length)
           (if path
             (progn
-              (initialize-sockaddr_in client-addr *socket_af_unix* path)
+              (initialize-sockaddr_un client-addr *socket_af_unix* path)
               (%sendto socket-fd ptr (min length +max-udp-message-size+) 0
                        (fli:copy-pointer client-addr :type '(:struct sockaddr))
                        (fli:dereference len)))
@@ -232,7 +232,7 @@
         (socket-fd (socket-datagram-socket socket)))
     (fli:with-dynamic-foreign-objects ((client-addr (:struct sockaddr_un))
                                        (len :int
-					    #-(or lispworks3 lispworks4 lispworks5.0)
+                                            #-(or lispworks3 lispworks4 lispworks5.0)
                                             :initial-element
                                             (fli:size-of '(:struct sockaddr_un))))
       (fli:with-dynamic-lisp-array-pointer (ptr message :type '(:unsigned :byte))

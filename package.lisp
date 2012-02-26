@@ -32,6 +32,8 @@
     #:sin_port
     #:sockaddr
     #:sockaddr_in
+    #-(or lispworks4 lispworks5 lispworks6.0) #:sockaddr_in6
+    #-(or lispworks4 lispworks5 lispworks6.0) #:lw-sockaddr
     #:socket
     #:socket-listen
     #+mswindows #:ensure-sockets
