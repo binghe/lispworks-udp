@@ -4,7 +4,9 @@
 
 (in-package :comm+)
 
-(defun initialize-dynamic-sockaddr (hostname service protocol)
+(defun initialize-dynamic-sockaddr (hostname service protocol
+                                    &aux (original-hostname hostname)) 
+  (declare (ignorable original-hostname))
   #+(or lispworks4 lispworks5 lispworks6.0)
   (let ((server-addr (fli:allocate-dynamic-foreign-object
                       :type '(:struct sockaddr_in))))
@@ -19,13 +21,12 @@
   #-(or lispworks4 lispworks5 lispworks6.0)
   (progn
     (when (stringp hostname)
-      (let ((parsed-ip-address (comm:string-ip-address hostname)))
-        (if parsed-ip-address
-            (setq hostname parsed-ip-address)
-          (let ((resolved-hostname (comm:get-host-entry hostname :fields '(:address))))
-            (unless resolved-hostname
-              (return-from initialize-dynamic-sockaddr :unknown-host))
-            (setq hostname resolved-hostname)))))
+      (setq hostname (string-ip-address hostname))
+      (unless hostname
+        (let ((resolved-hostname (comm:get-host-entry original-hostname :fields '(:address))))
+          (unless resolved-hostname
+            (return-from initialize-dynamic-sockaddr :unknown-host))
+          (setq hostname resolved-hostname))))
     (if (or (null hostname)
             (integerp hostname)
             (comm:ipv6-address-p hostname))
@@ -228,6 +229,17 @@
                                         :local-address local-address
                                         :local-port local-port))
          (socket-fd (socket-datagram-socket socket)))
+
+    ;; (Lisp Support Call #38920) comm+:open-udp-stream causes the socket-fd to be closed twice
+    ;; 
+    ;; The problem is that it discards the inet-datagram object returned by
+    ;; connect-to-udp-server and so the special free action can close the socket-fd
+    ;; and a random time.  This will cause errors if the special free action runs
+    ;; while the socket stream is still being used.  More nastily, it will cause
+    ;; unrelated file operations to fail if the stream is closed and the fd is reused
+    ;; before the special free action runs.
+    (hcl:flag-not-special-free-action socket)
+
     (make-instance 'socket-stream
                    :socket socket-fd
                    :direction direction
